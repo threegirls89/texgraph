@@ -1,0 +1,733 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%BoundingBox: 0 0 100 100
+0.2 setlinewidth
+
+% postscript codes for texgraph
+% the source of tgepspreamble.sty
+% begininput
+
+/cstlinear 0 def
+/cstlog 1 def
+/cstaxis 0 def
+/cstframe 1 def
+/cstsection 2 def
+/@max 4 array def
+/@min 4 array def
+/@plottype 4 array def
+/@ul 4 array def
+/plottype { @plottype exch get} def
+/min { @min exch get} def
+/max { @max exch get} def
+/ul { @ul exch get} def
+/coord {
+	2 dict begin
+	/axis exch def
+	/x exch def
+	axis plottype cstlinear eq { x axis min sub} { x axis min div log} 	ifelse axis ul mul
+	end
+} def
+/plot{
+	/y exch def
+	/x exch def
+	x (=) eq y (=) eq or {
+		linedraw 1 eq { first 0 eq { stroke /first 1 def} if} if
+	} {
+		xaxis plottype cstlog eq x 0 le and yaxis plottype cstlog eq y 0 le and or {
+			linedraw 1 eq { first 0 eq { stroke /first 1 def} if} if
+		} {
+			linedraw 1 eq {
+				first 1 eq{
+					/first 0 def
+					newpath
+					x xaxis coord y yaxis coord moveto
+				} {
+					x xaxis coord y yaxis coord lineto
+				} ifelse
+			} if
+			x xaxis coord y yaxis coord
+		} ifelse
+	} ifelse
+} def
+
+/point{
+	gsave
+	5 dict begin
+	setlinewidth
+	/pointsize exch def
+	1 sub /pointtype exch def
+	/ptype pointtype 4 idiv def
+	/subptype pointtype 4 mod def
+	/y exch def
+	/x exch def
+	ptype 0 eq{
+		subptype 0 eq{
+			newpath
+			0 setlinewidth
+			x y pointsize 2 div 0 360 arc
+			fill
+		} {
+			gsave
+			newpath
+			1 1 1 setrgbcolor
+			0 setlinewidth
+			x y pointsize 2 div 0 360 arc
+			fill
+			grestore
+			newpath
+			x y pointsize 2 div 0 360 arc
+			stroke
+			subptype 2 ge{
+				newpath
+				x y pointsize 4 div 0 360 arc
+				subptype 2 eq { stroke} { fill} ifelse
+			} if
+		} ifelse
+	} {
+		ptype 1 eq{
+			subptype 0 eq{
+				newpath
+				0 setlinewidth
+				x pointsize 0.353553 mul add y pointsize 0.353553 mul add moveto
+				0 pointsize -0.707107 mul rlineto
+				pointsize -0.707107 mul 0 rlineto
+				0 pointsize 0.707107 mul rlineto
+				closepath
+				fill
+			} {
+				gsave
+				newpath
+				1 1 1 setrgbcolor
+				0 setlinewidth
+				x pointsize 0.353553 mul add y pointsize 0.353553 mul add moveto
+				0 pointsize -0.707107 mul rlineto
+				pointsize -0.707107 mul 0 rlineto
+				0 pointsize 0.707107 mul rlineto
+				closepath
+				fill
+				grestore
+				newpath
+				x pointsize 0.353553 mul add y pointsize 0.353553 mul add moveto
+				0 pointsize -0.707107 mul rlineto
+				pointsize -0.707107 mul 0 rlineto
+				0 pointsize 0.707107 mul rlineto
+				closepath
+				stroke
+				subptype 2 ge{
+					newpath
+					x pointsize 0.176777 mul add y pointsize 0.176777 mul add moveto
+					0 pointsize -0.353553 mul rlineto
+					pointsize -0.353553 mul 0 rlineto
+					0 pointsize 0.353553 mul rlineto
+					closepath
+					subptype 2 eq { stroke} { fill} ifelse
+				} if
+			} ifelse
+		} {
+			ptype 2 eq{
+				subptype 0 eq{
+					newpath
+					0 setlinewidth
+					x pointsize 2 div add y moveto
+					pointsize -2 div pointsize -2 div rlineto
+					pointsize -2 div pointsize 2 div rlineto
+					pointsize 2 div pointsize 2 div rlineto
+					closepath
+					fill
+				} {
+					gsave
+					newpath
+					1 1 1 setrgbcolor
+					0 setlinewidth
+					x pointsize 2 div add y moveto
+					pointsize -2 div pointsize -2 div rlineto
+					pointsize -2 div pointsize 2 div rlineto
+					pointsize 2 div pointsize 2 div rlineto
+					closepath
+					fill
+					grestore
+					newpath
+					x pointsize 2 div add y moveto
+					pointsize -2 div pointsize -2 div rlineto
+					pointsize -2 div pointsize 2 div rlineto
+					pointsize 2 div pointsize 2 div rlineto
+					closepath
+					stroke
+					subptype 2 ge{
+						newpath
+						x pointsize 4 div add y moveto
+						pointsize -4 div pointsize -4 div rlineto
+						pointsize -4 div pointsize 4 div rlineto
+						pointsize 4 div pointsize 4 div rlineto
+						closepath
+						subptype 2 eq { stroke} { fill} ifelse
+					} if
+				} ifelse
+			} {
+				ptype 3 eq{
+					subptype 0 eq{
+						newpath
+						0 setlinewidth
+						x y pointsize 2 div add moveto
+						-0.5 pointsize mul -0.8660254 pointsize mul rlineto
+						pointsize 0 rlineto
+						closepath
+						fill
+					} {
+						gsave
+						newpath
+						1 1 1 setrgbcolor
+						0 setlinewidth
+						x y pointsize 2 div add moveto
+						-0.5 pointsize mul -0.8660254 pointsize mul rlineto
+						pointsize 0 rlineto
+						closepath
+						fill
+						grestore
+						newpath
+						x y pointsize 2 div add moveto
+						-0.5 pointsize mul -0.8660254 pointsize mul rlineto
+						pointsize 0 rlineto
+						closepath
+						stroke
+						subptype 2 ge{
+							newpath
+							x y pointsize 4 div add moveto
+							-0.25 pointsize mul -0.4330127 pointsize mul rlineto
+							0.5 pointsize mul 0 rlineto
+							closepath
+							subptype 2 eq { stroke} { fill} ifelse
+						} if
+					} ifelse
+				} {
+				ptype 4 eq{
+					subptype 0 eq{
+							newpath
+							0 setlinewidth
+							x y pointsize 2 div sub moveto
+							-0.5 pointsize mul 0.8660254 pointsize mul rlineto
+							pointsize 0 rlineto
+							closepath
+							fill
+						} {
+							gsave
+							newpath
+							1 1 1 setrgbcolor
+							0 setlinewidth
+							x y pointsize 2 div sub moveto
+							-0.5 pointsize mul 0.8660254 pointsize mul rlineto
+							pointsize 0 rlineto
+							closepath
+							fill
+							grestore
+							newpath
+							x y pointsize 2 div sub moveto
+							-0.5 pointsize mul 0.8660254 pointsize mul rlineto
+							pointsize 0 rlineto
+							closepath
+							stroke
+							subptype 2 ge{
+								newpath
+								x y pointsize 4 div sub moveto
+								-0.25 pointsize mul 0.4330127 pointsize mul rlineto
+								0.5 pointsize mul 0 rlineto
+								closepath
+								subptype 2 eq { stroke} { fill} ifelse
+							} if
+						} ifelse
+					} {
+						ptype 5 eq {
+							subptype 0 eq {
+								newpath
+								x y pointsize 2 div sub moveto
+								0 pointsize rlineto
+								x pointsize 2 div sub y moveto
+								pointsize 0 rlineto
+								stroke
+							} {
+								subptype 1 eq {
+									newpath
+									x pointsize 0.353553 mul sub y pointsize 0.353553 mul sub moveto
+									pointsize 0.707107 mul pointsize 0.707107 mul rlineto
+									x pointsize 0.353553 mul add y pointsize 0.353553 mul sub moveto
+									pointsize -0.707107 mul pointsize 0.707107 mul rlineto
+									stroke
+								} {
+									subptype 2 eq {
+										newpath
+										x y pointsize 2 div sub moveto
+										0 pointsize rlineto
+										x pointsize 0.4330127 mul sub y pointsize 0.25 mul sub moveto
+										pointsize 0.8660254 mul pointsize 0.5 mul rlineto
+										x pointsize 0.4330127 mul add y pointsize 0.25 mul sub moveto
+										pointsize -0.8660254 mul pointsize 0.5 mul rlineto
+										stroke
+									} {
+										newpath
+										x y pointsize 2 div sub moveto
+										0 pointsize rlineto
+										x pointsize 2 div sub y moveto
+										pointsize 0 rlineto
+										x pointsize 0.353553 mul sub y pointsize 0.353553 mul sub moveto
+										pointsize 0.707107 mul pointsize 0.707107 mul rlineto
+										x pointsize 0.353553 mul add y pointsize 0.353553 mul sub moveto
+										pointsize -0.707107 mul pointsize 0.707107 mul rlineto
+										stroke
+									} ifelse
+								} ifelse
+							} ifelse
+						} {
+							ptype 6 eq {
+								subptype 0 eq {
+									newpath
+									0 setlinewidth
+									x pointsize 0.475528 mul add y pointsize 0.154508 mul add moveto
+									x y pointsize 0.5 mul add lineto
+									x pointsize -0.475528 mul add y pointsize 0.154508 mul add lineto
+									x pointsize -0.293823 mul add y pointsize -0.404508 mul add lineto
+									x pointsize 0.293823 mul add y pointsize -0.404508 mul add lineto
+									closepath
+									fill
+								} {
+									gsave
+									1 setgray
+									newpath
+									0 setlinewidth
+									x pointsize 0.475528 mul add y pointsize 0.154508 mul add moveto
+									x y pointsize 0.5 mul add lineto
+									x pointsize -0.475528 mul add y pointsize 0.154508 mul add lineto
+									x pointsize -0.293893 mul add y pointsize -0.404508 mul add lineto
+									x pointsize 0.293893 mul add y pointsize -0.404508 mul add lineto
+									closepath
+									fill
+									grestore
+									newpath
+									x pointsize 0.475528 mul add y pointsize 0.154508 mul add moveto
+									x y pointsize 0.5 mul add lineto
+									x pointsize -0.475528 mul add y pointsize 0.154508 mul add lineto
+									x pointsize -0.293893 mul add y pointsize -0.404508 mul add lineto
+									x pointsize 0.293893 mul add y pointsize -0.404508 mul add lineto
+									closepath
+									stroke
+									subptype 2 ge {
+										newpath
+										x pointsize 0.237764 mul add y pointsize 0.077254 mul add moveto
+										x y pointsize 0.25 mul add lineto
+										x pointsize -0.237764 mul add y pointsize 0.077254 mul add lineto
+										x pointsize -0.146946 mul add y pointsize -0.202254 mul add lineto
+										x pointsize 0.146946 mul add y pointsize -0.202254 mul add lineto
+										closepath
+										subptype 2 eq { stroke} { fill} ifelse
+									} if
+								} ifelse
+							} {
+								ptype 7 eq {
+									subptype 0 eq {
+										newpath
+										0 setlinewidth
+										x pointsize 0.4330127 mul add y pointsize 0.25 mul add moveto
+										x y pointsize 0.5 mul add lineto
+										x pointsize -0.4330127 mul add y pointsize 0.25 mul add lineto
+										x pointsize -0.4330127 mul add y pointsize -0.25 mul add lineto
+										x y pointsize -0.5 mul add lineto
+										x pointsize 0.4330127 mul add y pointsize -0.25 mul add lineto
+										closepath
+										fill
+									} {
+										gsave
+										1 setgray
+										newpath
+										0 setlinewidth
+										x pointsize 0.4330127 mul add y pointsize 0.25 mul add moveto
+										x y pointsize 0.5 mul add lineto
+										x pointsize -0.4330127 mul add y pointsize 0.25 mul add lineto
+										x pointsize -0.4330127 mul add y pointsize -0.25 mul add lineto
+										x y pointsize -0.5 mul add lineto
+										x pointsize 0.4330127 mul add y pointsize -0.25 mul add lineto
+										closepath
+										fill
+										grestore
+										newpath
+										x pointsize 0.4330127 mul add y pointsize 0.25 mul add moveto
+										x y pointsize 0.5 mul add lineto
+										x pointsize -0.4330127 mul add y pointsize 0.25 mul add lineto
+										x pointsize -0.4330127 mul add y pointsize -0.25 mul add lineto
+										x y pointsize -0.5 mul add lineto
+										x pointsize 0.4330127 mul add y pointsize -0.25 mul add lineto
+										closepath
+										stroke
+										subptype 2 ge {
+											newpath
+											x pointsize 0.2165064 mul add y pointsize 0.125 mul add moveto
+											x y pointsize 0.25 mul add lineto
+											x pointsize -0.2165064 mul add y pointsize 0.125 mul add lineto
+											x pointsize -0.2165064 mul add y pointsize -0.125 mul add lineto
+											x y pointsize -0.25 mul add lineto
+											x pointsize 0.2165064 mul add y pointsize -0.125 mul add lineto
+											closepath
+											subptype 2 eq { stroke} { fill} ifelse
+										} if
+									} ifelse
+								} {
+								} ifelse
+							} ifelse
+						} ifelse
+					} ifelse
+				} ifelse
+			} ifelse
+		} ifelse
+	} ifelse
+	fill
+	end
+	grestore
+} def
+
+/points{
+	3 dict begin
+	/linewidth exch def
+	/pointsize exch def
+	/pointtype exch def
+	pointtype 0 eq {
+		cleartomark
+	} {
+		{ counttomark 0 le { exit} if
+			pointtype pointsize linewidth point
+		} loop
+		pop
+	} ifelse
+	end
+} def
+
+/makeul{
+	4 dict begin
+	/plottype exch def
+	/max exch def
+	/min exch def
+	/axis exch def
+	axis 2 mod 0 eq { framewidth} { frameheight} ifelse
+	plottype cstlinear eq { max min sub} { max min div log} ifelse
+	div
+	end
+} def
+
+/setaxis {
+	4 dict begin
+	/plottype exch def
+	/max exch def
+	/min exch def
+	/axis exch def
+	@min axis min put
+	@max axis max put
+	@plottype axis plottype put
+	@ul axis axis min max plottype makeul put
+	end
+} def
+
+/drawmeasure {
+	3 dict begin
+	/frametype exch def
+	/axis exch def
+	/x exch def
+	newpath
+	frametype cstsection eq{ 
+		axis 2 mod 0 eq {
+			x axis coord 0 moveto
+			0 frameheight rlineto
+		} {
+			0 x axis coord moveto
+			framewidth 0 rlineto
+		} ifelse
+	} { 
+		axis 0 eq {
+			x axis coord 0 moveto
+			0 measurelen rlineto
+		} {
+			axis 2 eq {
+				x axis coord frameheight moveto
+				0 measurelen -1 mul rlineto
+			} {
+				axis 1 eq {
+					0 x axis coord moveto
+					measurelen 0 rlineto
+				} {
+					framewidth x axis coord moveto
+					measurelen -1 mul 0 rlineto
+				} ifelse
+			} ifelse
+		} ifelse
+	} ifelse
+	stroke
+	end
+} def
+
+/measure {
+	4 dict begin
+	/frametype exch def
+	/division exch def
+	/increment exch def
+	/axis exch def
+	axis plottype cstlinear eq {
+		gsave
+		measurethick setlinewidth
+		/t axis min increment div ceiling def
+		{ /major t increment mul def
+			major axis max gt { exit} if
+			major axis frametype drawmeasure
+			gsave
+			submeasurethick setlinewidth
+			/s 1 def
+			{ /minor major increment s division div mul add def
+				minor axis max ge s division ge or { exit} if
+				minor axis frametype drawmeasure
+				/s s 1 add def
+			} loop
+			grestore
+			/t t 1 add def
+		} loop
+		/major axis min increment div ceiling increment mul def
+		gsave
+		submeasurethick setlinewidth
+		/s 1 def
+		{ /minor major increment s division div mul sub def
+			minor axis min le s division ge or { exit} if
+			minor axis frametype drawmeasure
+			/s s 1 add def
+		} loop
+		grestore
+		grestore
+	} {
+		measurethick setlinewidth
+		gsave
+		/t axis min log ceiling def
+		{ t axis max log gt { exit} if
+			10 t exp axis frametype drawmeasure
+			division 0 gt {
+				gsave
+				submeasurethick setlinewidth
+				/s 2 def
+				{ s 10 ge t s log add axis max log ge or { exit} if
+					10 t exp s mul axis frametype drawmeasure
+					/s s 1 add def
+				} loop
+				grestore
+			} if
+			/t t 1 add def
+		} loop
+		division 0 gt {
+			/t axis min log ceiling 1 sub def
+			gsave
+			submeasurethick setlinewidth
+			/s 9 def
+			{ t s log add axis min log le { exit} if
+				10 t exp s mul axis frametype drawmeasure
+				/s s 1 sub def
+			} loop
+			grestore
+		} if
+		grestore
+	} ifelse
+	end
+} def
+
+/frame{
+	1 dict begin
+	/framethick exch def
+	gsave
+	newpath
+	framethick setlinewidth
+	0 0 moveto
+	framewidth 0 lineto
+	framewidth frameheight lineto
+	0 frameheight lineto
+	closepath
+	stroke
+	grestore
+	end
+} def
+
+/legendline{
+	4 dict begin
+	/linewidth exch def
+	/length exch def
+	/y exch def
+	/x exch def
+	linedraw 1 eq {
+		linewidth setlinewidth
+		newpath
+		x y moveto
+		length 0 rlineto
+		stroke
+	} if
+	end
+} def
+
+/whiterect{
+	gsave
+	4 dict begin
+	0 setlinewidth
+	1 setgray
+	/height exch def
+	/width exch def
+	/y exch def
+	/x exch def
+	newpath
+	x y moveto
+	width 0 rlineto
+	0 height -1 mul rlineto
+	width -1 mul 0 rlineto
+	closepath
+	fill
+	end
+	grestore
+} def
+
+/xyur2num {
+	1 dict begin
+	/ch exch def
+	ch (x) eq { 0} { ch (y) eq { 1} { ch (u) eq { 2} { 3} ifelse} ifelse} ifelse
+	end
+} def
+
+/arrowhead {
+	gsave
+	0 setlinewidth
+	12 dict begin
+	/l exch def
+	/theta exch def
+	/dy exch def
+	/dx exch def
+	/y exch def
+	/x exch def
+	/dl dx dx mul dy dy mul add sqrt def
+	/phi 180 theta sub def
+	/x1 dx phi cos mul dy phi sin mul sub l mul dl div x add def
+	/y1 dx phi sin mul dy phi cos mul add l mul dl div y add def
+	/phi 180 theta add def
+	/x2 dx phi cos mul dy phi sin mul sub l mul dl div x add def
+	/y2 dx phi sin mul dy phi cos mul add l mul dl div y add def
+	newpath
+	x1 y1 moveto
+	x y lineto
+	x2 y2 lineto
+	closepath
+	fill
+	end
+	grestore
+} def
+
+/arrow {
+	9 dict begin
+	/type exch def
+	/l exch def
+	/theta exch def
+	/y2 exch def
+	/x2 exch def
+	/y1 exch def
+	/x1 exch def
+	/norm x2 x1 sub x2 x1 sub mul y2 y1 sub y2 y1 sub mul add sqrt def
+	/h l theta cos div def
+	/x01 x1 def
+	/x02 x2 def
+	/y01 y1 def
+	/y02 y2 def
+	type 2 mod 1 eq {
+		x2 y2 x2 x1 sub y2 y1 sub theta h arrowhead
+		/x02 x2 x2 x1 sub norm div l mul sub def
+		/y02 y2 y2 y1 sub norm div l mul sub def
+	} if
+	type 2 idiv 1 eq {
+		x1 y1 x1 x2 sub y1 y2 sub theta h arrowhead
+		/x01 x1 x1 x2 sub norm div l mul sub def
+		/y01 y1 y1 y2 sub norm div l mul sub def
+	} if
+	newpath
+	x01 y01 moveto
+	x02 y02 lineto
+	stroke
+	end
+} def
+
+% endinput
+
+gsave
+/framewidth 100 def
+/frameheight 100 def
+
+%/@max [5 3 1 1] def
+%/@min [-4.4 2e-6 0 0] def
+%/@plottype [cstlinear cstlog cstlinear cstlinear] def
+%makeul
+
+/measurelen 5 def
+/measurethick 0.2 def
+/submeasurethick 0.1 def
+0 -4.4 5 cstlinear setaxis
+1 2e-6 3 cstlog setaxis
+2 0 1 cstlinear setaxis
+3 0 1 cstlinear setaxis
+0 1 4 cstframe measure % x目盛
+1 2e-6 3 cstlog 1 2 cstframe measure % y目盛
+2 1 10 cstframe measure % u
+3 1 10 cstframe measure % r
+0.5 frame
+
+/first 1 def
+gsave
+/linedraw 1 def
+%[1 1] 0 setdash
+0.2 setlinewidth
+/xaxis (x) xyur2num def
+/yaxis (y) xyur2num def
+mark
+3.00 0.000e+000 plot
+2.50 0.000e+000 plot
+2.00 0.000e+000 plot
+1.50 0.000e+000 plot
+1.25 0.000e+000 plot
+1.00 0.000e+000 plot
+0.90 0.000e+000 plot
+0.80 1.354e-003 plot
+0.70 5.033e-002 plot
+0.60 8.054e-002 plot
+0.50 9.519e-002 plot
+0.00 1.346e-001 plot
+-0.50 1.622e-001 plot
+-1.00 1.847e-001 plot
+-1.50 2.035e-001 plot
+-2.00 2.221e-001 plot
+stroke
+grestore
+17 2 0.2 points
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+/first 1 def
+/xaxis 0 def% 0: x軸参照, 1: u軸参照
+/yaxis 1 def% 0: y軸参照, 1: r軸参照
+gsave
+%/linedraw 0 def
+0.1 setlinewidth
+mark
+3.00 7.880e-002 plot
+2.50 9.122e-002 plot
+2.00 1.044e-001 plot
+1.50 1.177e-001 plot
+1.25 1.242e-001 plot
+1.00 1.306e-001 plot
+0.90 1.339e-001 plot
+0.80 1.362e-001 plot
+0.70 1.396e-001 plot
+0.60 1.423e-001 plot
+0.50 1.449e-001 plot
+0.00 1.585e-001 plot
+-0.50 1.729e-001 plot
+-1.00 1.866e-001 plot
+-1.50 2.000e-001 plot
+-2.00 2.135e-001 plot
+-3.00 0 plot
+-4.00 2.135e-001 plot
+stroke
+grestore
+10 2 0.1 points
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+grestore
+%%EOF
+

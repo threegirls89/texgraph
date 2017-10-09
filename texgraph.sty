@@ -1,0 +1,934 @@
+%
+% texgraph.sty
+% 目的: TeX(LaTeX2e)だけでsma4winライクのグラフを書きたい.
+%
+% Version log
+%
+% 2015/05/16 製作開始
+% データファイルからデータの抽出に成功.
+% 2015/08/28 \alpha版 ver.0.0.1
+% 枠線, 目盛数字の描画, plotが完成
+% 点種, 線種は1種のみ
+% 2016/03/03 \beta版 ver.0.0.2
+% 軸タイトルの描画
+% 凡例の描画
+% 点種を増やした(なし, 丸, 四角, 三角, 逆三角, ×)
+% 線種を増やした(なし, 実線, 破線)
+% 枠の種類を増やした(方眼, 枠)
+%
+% 2016/03/14 ver.0.0.3
+% 凡例描画完成
+% 細かい設定をkeyvalで行うようにした
+% 目盛数字をちゃんと作った(小数, 指数, 指数のみ)
+%
+% 2016/04/25 ver.0.0.4
+% \xaxisが対数plotの時動作しないbugを修正(\yaxisだけ最新版だった)
+%
+% 2016/04/30 ver.0.0.5
+% u軸(上), r軸(右)の追加. 異軸グラフ同時plotを実現.
+%
+% 2016/05/18 ver.0.1.0
+% 実用第1版
+% 文字列, 直線描画の追加. 引数の整理, バグ修正.
+%
+% 2016/05/24 ver.0.1.1
+% ver.0.1.0において, 凡例中でフォントを変えるコマンドが使えないバグを修正, and 凡例の文字列幅を自動取得
+% データファイル列中の = で線を分割する機能を追加. 行数が不揃いなときのpaddingにも使用
+% ver.0.1.0以下とコマンドの互換性がないので注意
+%
+% ******** 2016/06/08 emathと共存させると軸タイトル, 凡例文字列の位置がおかしくなる
+% 2016/07/03 ver.0.1.2
+% axis, frame, plot, legendの線幅とか本質でないもののデフォルト値を定めた
+%
+% 2016/08/14 ver.0.1.3
+% 凡例文字列幅の自動取得が正しくできないバグを修正
+% emathと共存しても軸タイトル, 凡例文字列の位置がおかしくならないよう修正
+% 矢印描画\tgarrowの追加
+% 文字列描画\tgputstrの追加
+% 目盛り数字が-0になるバグ(浮動小数点数の精度による?)の修正
+%
+% ******** 2016/08/18 first release of texgraph.sty
+% 2016/08/18 ver.1.0.0
+% python出力ファイルの拡張子をtxtからtmpに変更
+% first release
+%
+\NeedsTeXFormat{LaTeX2e}%
+\ProvidesPackage{texgraph}[2016/10/05 ver.1.0.1 threegirls89]%
+\def\j@urnalname{texgraph}
+\def\versi@ndate{Oct. 05, 2016}
+\def\versi@nno{ver 1.0.1}
+\def\copyrighth@lder{threegirls89}
+\typeout{Option Style `\j@urnalname' (\versi@nno) <\versi@ndate>\space [\copyrighth@lder]}
+\typeout{Macros to plot graphs of external data files.}
+%
+\RequirePackage{keyval}
+\RequirePackage{tgepspreamble}
+%
+% %, #を1つのcharacterとして扱う
+\bgroup
+\catcode37=11
+\gdef\@percent{%}
+\egroup
+\bgroup
+\catcode35=11
+\gdef\perl@hash{#}
+\egroup
+%
+% \the\dimenから``pt''を除く
+\begingroup
+	\catcode`P=12
+	\catcode`T=12
+	\lowercase{\gdef\rem@pt#1.#2PT{#1\ifnum#2>\z@.#2\fi}}
+	\lowercase{\gdef\rem@int#1.#2PT{#1}}
+\endgroup
+\def\rmpt{\expandafter\rem@pt\the}
+\def\rmptint{\expandafter\rem@int\the}
+%
+% 変数, 定数
+\def\tg@epsname{-tg}
+\newwrite\tg@epsfile
+\newcounter{tg@epsnum}
+\newdimen\tg@width
+\newdimen\tg@height
+\newdimen\tg@pswidth
+\newdimen\tg@psheight
+\newdimen\tg@pictwidth
+\newdimen\tg@pictheight
+\newdimen\tg@leftmargin
+\newdimen\tg@rightmargin
+\newdimen\tg@topmargin
+\newdimen\tg@bottommargin
+\newdimen\tg@legtextwidth
+\newcount\tg@cnt@legend
+\newcount\tg@cnt@str
+%
+% 制御綴中末尾の空白を削除
+\def\tg@rmsp@ce#1 {#1}
+\def\tg@rmspace#1{\expandafter\tg@rmsp@ce#1}
+%
+% 数値計算をpythonに外注
+% #1: python文法の計算式, #2: 計算結果
+\newwrite\tg@pyout
+\newread\tg@pyin
+\def\tg@pycalc#1#2{%
+	\immediate\openout\tg@pyout=\jobname-tg.py%
+	\immediate\write\tg@pyout{import math}%
+	\immediate\write\tg@pyout{fout = open("\jobname-tg.tmp", "w")}%
+	\immediate\write\tg@pyout{fout.write(str(#1))}%
+	\immediate\write\tg@pyout{fout.close()}%
+	\immediate\write\tg@pyout{exit()}%
+	\immediate\closeout\tg@pyout%
+	\immediate\write18{python \jobname-tg.py}%
+	\immediate\openin\tg@pyin=\jobname-tg.tmp%
+	\immediate\read\tg@pyin to \tg@tmp%
+	\edef#2{\tg@rmspace\tg@tmp}
+	\immediate\closein\tg@pyin%
+}
+\def\tg@expformat#1#2#3{%
+	\if#3e #1\times10^{#2} \else 10^{#2} \fi%
+}
+%
+% 数値の表示を整える
+% #1: 入力, #2: 出力, #3: 書式指定(f: 小数, e: 指数, l: 指数部のみ表示), #4: 小数点以下の桁数
+\def\tg@pyformat#1#2#3#4{%
+	\immediate\openout\tg@pyout=\jobname-tg.py%
+	\immediate\write\tg@pyout{import math}%
+	\immediate\write\tg@pyout{fout = open("\jobname-tg.tmp", "w")}%
+	\if#3f% 小数表示
+		\immediate\write\tg@pyout{num = 0.0 if abs(#1) < 10 ** (-#4) else #1}%
+		\immediate\write\tg@pyout{fout.write(format(num,'.#4f'))}%
+	\else% 指数表示
+		\immediate\write\tg@pyout{tempstra = format(#1,'.#4e')}%
+		\if#3e%
+			\immediate\write\tg@pyout{fout.write('{' + tempstra[: tempstra.find('e')] + '}{' + str(int(tempstra[tempstra.find('e') + 1 :])) + '}')}%
+		\else
+			\immediate\write\tg@pyout{fout.write('{}{' + str(int(tempstra[tempstra.find('e') + 1 :])) + '}')}%
+		\fi
+	\fi
+	\immediate\write\tg@pyout{fout.close()}%
+	\immediate\write\tg@pyout{exit()}%
+	\immediate\closeout\tg@pyout%
+	\immediate\write18{python \jobname-tg.py}%
+	\immediate\openin\tg@pyin=\jobname-tg.tmp%
+	\immediate\read\tg@pyin to \tg@tmp%
+	\if#3f% 小数表示
+		\edef#2{$\tg@rmspace\tg@tmp$}
+	\else% 指数表示
+		\expandafter\edef\expandafter#2\expandafter{\expandafter$\expandafter\tg@expformat\tg@tmp#3$}
+	\fi
+	\immediate\closein\tg@pyin%
+}
+%
+% プロットの計算式指定を評価
+% #1: 入力値, #2: 出力値, #3: 未知数文字, #4: 式
+\def\tg@pyeval#1#2#3#4{%
+	\immediate\openout\tg@pyout=\jobname-tg.py%
+	\immediate\write\tg@pyout{import math}%
+	\immediate\write\tg@pyout{fout = open("\jobname-tg.tmp", "w")}%
+	\immediate\write\tg@pyout{#3 = #1}%
+	\immediate\write\tg@pyout{fout.write(str(eval("#4")))}%
+	\immediate\write\tg@pyout{fout.close()}%
+	\immediate\write\tg@pyout{exit()}%
+	\immediate\closeout\tg@pyout%
+	\immediate\write18{python \jobname-tg.py}%
+	\immediate\openin\tg@pyin=\jobname-tg.tmp%
+	\immediate\read\tg@pyin to \tg@tmp%
+	\edef#2{\tg@rmspace\tg@tmp}
+	\immediate\closein\tg@pyin%
+}
+%
+% shell-escapeが有効かtest
+\def\tg@pyinputstr{a }
+\def\tg@pytest{%
+	\immediate\openout\tg@pyout=tgpytest.tmp%
+	\immediate\closeout\tg@pyout%
+	\immediate\openout\tg@pyout=tgpytest.py%
+	\immediate\write\tg@pyout{fout = open("tgpytest.tmp", "w")}%
+	\immediate\write\tg@pyout{fout.write('a')}%
+	\immediate\write\tg@pyout{fout.close()}%
+	\immediate\write\tg@pyout{exit()}%
+	\immediate\closeout\tg@pyout%
+	\immediate\write18{python tgpytest.py}%
+	\immediate\openin\tg@pyin=tgpytest.tmp%
+	\immediate\read\tg@pyin to \tg@tmp%
+	\immediate\closein\tg@pyin%
+	\def\tg@next{\relax}%
+	\ifx\tg@tmp\tg@pyinputstr
+		\immediate\write18{rm tgpytest*}%
+	\else
+		\typeout{  Fatal: Enable --shell-escape. Process stopped.}%
+		\def\tg@next{\stop}%
+	\fi
+	\tg@next%
+}
+%
+% 列抽出
+\newread\tg@fin
+\newwrite\tg@fout
+\newcount\tg@cnttopchar
+%
+\def\tg@extracttopchar#1#2\relax{\tg@cnttopchar=`#1 }
+% データファイル1行の文字列#1から第#2列を抽出
+\def\tg@extractstr#1[#2]{%
+	\bgroup
+	\count0=#2
+	\expandafter\tg@split#1\relax
+	\egroup%
+}
+% データファイルを実際に切り出す.
+\def\tg@split#1 #2{%
+	\ifnum\count0=1
+		\xdef\tg@ret@split{#1}
+	\fi
+	\advance\count0 -1
+	\if#2\relax
+		\def\tg@next{\relax}
+	\else
+		\def\tg@next{\expandafter\tg@split#2}
+	\fi
+	\tg@next}
+\def\tg@emptyrow{\par}
+%
+% データファイル#1を1行づつ読み出し, 第#2,#3列を抽出, epsに座標書き出し
+% #4, #5: 第#2, #3列の値に対する変換式
+\def\tg@extracttwocolumn#1[#2][#3]#4#5{%
+	\immediate\openin\tg@fin=#1%
+	\loop
+	\catcode`\#=12% データファイルの行を扱う時のみ#をその他の文字として扱う
+	\immediate\read\tg@fin to \tg@onerow%
+	\catcode`\#=6
+	\ifeof\tg@fin\else
+		\ifx\tg@onerow\tg@emptyrow\else% 空行判定
+			\expandafter\tg@extracttopchar\tg@onerow\relax
+			\ifnum\tg@cnttopchar=35 \else% 空行, コメント行でない場合実行する処理
+				\tg@extractstr\tg@onerow[#2]% 第#2列抽出
+				\if=\tg@ret@split
+					\edef\tg@tmpx{(\tg@ret@split)}
+				\else
+					\tg@pyeval\tg@ret@split\tg@tmpx{x}#4
+				\fi
+				\tg@extractstr\tg@onerow[#3]% 第#3列抽出
+				\if=\tg@ret@split
+					\edef\tg@tmpy{(\tg@ret@split)}
+				\else
+					\tg@pyeval\tg@ret@split\tg@tmpy{y}#5
+				\fi
+				\immediate\write\tg@epsfile{\tg@tmpx\space\tg@tmpy\space plot}%
+			\fi
+		\fi
+	\repeat
+	\closein\tg@fin%
+}
+%
+% plotを行う
+\def\tg@strnolines{0}
+\def\tg@strlines{1}
+%
+% #1 keyval
+% #2 データファイル名
+% #3:#4 横参照軸(x or u):その列
+% #5:#6 縦参照軸(y, r):その列
+%
+\define@key{tg@tgplot}{pointtype}{\edef\tg@pointtype{#1}}% 点の種類
+\define@key{tg@tgplot}{pointsize}{\edef\tg@pointsize{#1}}% 点のサイズ[pt]
+\define@key{tg@tgplot}{linetype}{\edef\tg@linetype{#1}}% 線種(0=なし, 1=実線, 破線はpsの書式)
+\define@key{tg@tgplot}{linethickness}{\edef\tg@linewidth{#1}}% 線の太さ[pt]
+\define@key{tg@tgplot}{xconvert}{\edef\tg@xconvert{#1}}% 横軸値変換
+\define@key{tg@tgplot}{yconvert}{\edef\tg@yconvert{#1}}% 縦軸値変換
+%
+\def\plot{%
+\@ifnextchar<{\@plot}{\@plot<>}%
+}
+\def\@plot<#1>#2[#3:#4][#5:#6]#7{%
+	\def\tg@pointtype{0}
+	\def\tg@pointsize{5}
+	\def\tg@linetype{1}
+	\def\tg@linewidth{1}
+	\def\tg@xconvert{x}
+	\def\tg@yconvert{y}
+	\setkeys{tg@tgplot}{#1}
+	\immediate\write\tg@epsfile{/first 1 def}%
+	\immediate\write\tg@epsfile{/xaxis (#3) xyur2num def}%
+	\immediate\write\tg@epsfile{/yaxis (#5) xyur2num def}%
+	\immediate\write\tg@epsfile{gsave}%
+	\immediate\write\tg@epsfile{\tg@linewidth \space setlinewidth}%
+	\def\tg@emptycheck{#7}
+	\ifx\tg@emptycheck\empty\else
+		\expandafter\newbox\csname tg@box\the\tg@cnt@legend\endcsname
+		\expandafter\setbox\csname tg@box\the\tg@cnt@legend\endcsname=\hbox{\tg@legendfont #7}
+		\@tempdima=\expandafter\wd\csname tg@box\the\tg@cnt@legend\endcsname
+		\ifdim\@tempdima>\tg@legtextwidth \tg@legtextwidth=\@tempdima\fi
+		\tg@makelegend{\csname tg@box\the\tg@cnt@legend\endcsname}\tg@pointtype\tg@pointsize\tg@linetype\tg@linewidth
+		\advance \tg@cnt@legend 1
+	\fi
+	\ifx\tg@linetype\tg@strnolines
+		\immediate\write\tg@epsfile{/linedraw 0 def}%
+	\else
+		\immediate\write\tg@epsfile{/linedraw 1 def}%
+		\ifx\tg@linetype\tg@strlines\else
+			\immediate\write\tg@epsfile{\tg@linetype\space setdash}%
+		\fi
+	\fi
+	\immediate\write\tg@epsfile{mark}%
+	\tg@extracttwocolumn#2[#4][#6]\tg@xconvert\tg@yconvert
+	\immediate\write\tg@epsfile{stroke}%
+	\immediate\write\tg@epsfile{grestore}%
+	\immediate\write\tg@epsfile{\tg@pointtype \space \tg@pointsize\space \tg@linewidth\space points}%
+}
+%
+% x軸の設定
+% #1: keyval
+% #2, #3: 範囲 #2: 左端の値, #3: 右端の値.
+%
+% xaxis用keyval
+\define@key{tg@xaxis}{increment}{\edef\tg@xincrement{#1}}% 大目盛増分
+\define@key{tg@xaxis}{division}{\edef\tg@xdivision{#1}}% 大目盛間小目盛分割数
+\define@key{tg@xaxis}{plottype}{\edef\tg@xtype{#1}}% プロットの種類(linear or log)
+\define@key{tg@xaxis}{format}{\edef\tg@xformat{#1}}% 軸数字書式e,f,l
+\define@key{tg@xaxis}{presition}{\edef\tg@xpresition{#1}}% 軸数字の小数点以下桁数 e,fの時
+\def\xaxis<#1>(#2,#3){%
+	\def\tg@xpresition{0}
+	\def\tg@xincrement{1}% logの時省略するためのダミー
+	\setkeys{tg@xaxis}{#1}
+	\edef\tg@xmin{#2}
+	\edef\tg@xmax{#3}
+	\immediate\write\tg@epsfile{0 \tg@xmin\space \tg@xmax\space cst\tg@xtype\space setaxis}%
+	\iftg@uaxis\else% u軸ない時はx軸と同じで数字なし
+		\uaxis<increment=\tg@xincrement,division=\tg@xdivision,plottype=\tg@xtype,format=n>(\tg@xmin,\tg@xmax)
+	\fi%
+}
+%
+% y軸の設定
+% 設定内容はx軸と同じ
+\define@key{tg@yaxis}{increment}{\edef\tg@yincrement{#1}}%
+\define@key{tg@yaxis}{division}{\edef\tg@ydivision{#1}}%
+\define@key{tg@yaxis}{plottype}{\edef\tg@ytype{#1}}%
+\define@key{tg@yaxis}{format}{\edef\tg@yformat{#1}}%
+\define@key{tg@yaxis}{presition}{\edef\tg@ypresition{#1}}%
+\def\yaxis<#1>(#2,#3){%
+	\def\tg@ypresition{0}
+	\def\tg@yincrement{1}
+	\setkeys{tg@yaxis}{#1}
+	\edef\tg@ymin{#2}
+	\edef\tg@ymax{#3}
+	\immediate\write\tg@epsfile{1 \tg@ymin\space \tg@ymax\space cst\tg@ytype\space setaxis}%
+	\iftg@raxis\else% r軸ない時はy軸と同じで数字なし
+		\raxis<increment=\tg@yincrement,division=\tg@ydivision,plottype=\tg@ytype,format=n>(\tg@ymin,\tg@ymax)
+	\fi%
+}
+%
+% u軸の設定
+% 設定内容はx軸と同じ
+\define@key{tg@uaxis}{increment}{\edef\tg@uincrement{#1}}%
+\define@key{tg@uaxis}{division}{\edef\tg@udivision{#1}}%
+\define@key{tg@uaxis}{plottype}{\edef\tg@utype{#1}}%
+\define@key{tg@uaxis}{format}{\edef\tg@uformat{#1}}%
+\define@key{tg@uaxis}{presition}{\edef\tg@upresition{#1}}%
+\newif\iftg@uaxis
+\tg@uaxisfalse
+\def\uaxis<#1>(#2,#3){%
+	\def\tg@upresition{0}
+	\def\tg@uincrement{1}
+	\tg@uaxistrue
+	\setkeys{tg@uaxis}{#1}
+	\edef\tg@umin{#2}
+	\edef\tg@umax{#3}
+	\immediate\write\tg@epsfile{2 \tg@umin\space \tg@umax\space cst\tg@utype\space setaxis}%
+}
+% r軸の設定
+% 設定内容はy軸と同じ
+\define@key{tg@raxis}{increment}{\edef\tg@rincrement{#1}}%
+\define@key{tg@raxis}{division}{\edef\tg@rdivision{#1}}%
+\define@key{tg@raxis}{plottype}{\edef\tg@rtype{#1}}%
+\define@key{tg@raxis}{format}{\edef\tg@rformat{#1}}%
+\define@key{tg@raxis}{presition}{\edef\tg@rpresition{#1}}%
+\newif\iftg@raxis
+\tg@raxisfalse
+\def\raxis<#1>(#2,#3){%
+	\def\tg@rpresition{0}
+	\def\tg@rincrement{1}
+	\tg@raxistrue
+	\setkeys{tg@raxis}{#1}
+	\edef\tg@rmin{#2}
+	\edef\tg@rmax{#3}
+	\immediate\write\tg@epsfile{3 \tg@rmin\space \tg@rmax\space cst\tg@rtype\space setaxis}%
+}
+%
+%
+% 枠の描画
+% #1: keyval
+% #2: 枠タイプ(axis,frame,section) (axis: 軸のみ, 未成), frame: 枠, section:方眼
+\def\tg@strlinear{linear}
+\def\tg@strlog{log}
+\def\tg@strsection{section}
+% \frame用keyval
+\define@key{tg@frame}{measurelength}{\edef\tg@measurelen{#1}}% 目盛長さ(section以外)
+\define@key{tg@frame}{measurethickness}{\edef\tg@measurethick{#1}}% 大目盛線幅
+\define@key{tg@frame}{submeasurethickness}{\edef\tg@submeasurethick{#1}}% 小目盛線幅
+\define@key{tg@frame}{framethickness}{\edef\tg@framethick{#1}}% 枠線幅
+\define@key{tg@frame}{frametype}{\edef\tg@frametype{#1}}% 枠種類 section or frame
+\define@key{tg@frame}{measurefont}{\def\tg@measurefont{#1}}% 目盛文字フォント 目盛文字は数式環境内のため単純な実装ではitalicなどにできない
+\def\frame#1{%
+	\def\tg@measurelen{3}
+	\def\tg@measurethick{0.4}
+	\def\tg@submeasurethick{0.1}
+	\def\tg@framethick{1}
+	\def\tg@frametype{frame}
+	\def\tg@measurefont{\normalsize\rmfamily}
+	\setkeys{tg@frame}{#1}
+	\immediate\write\tg@epsfile{/measurelen \tg@measurelen\space def}%
+	\immediate\write\tg@epsfile{/measurethick \tg@measurethick\space def}%
+	\immediate\write\tg@epsfile{/submeasurethick \tg@submeasurethick\space def}%
+%x軸
+	% epsにx目盛書き出し
+	\immediate\write\tg@epsfile{0 \tg@xincrement\space \tg@xdivision\space cst\tg@frametype\space measure}%
+	\ifx\tg@xtype\tg@strlinear
+		% x軸数字
+		\tg@pycalc{math.ceil(float(\tg@xmin) / \tg@xincrement) * \tg@xincrement}{\tg@xmeasuremin}%
+		\tg@pycalc{math.floor(float(\tg@xmax) / \tg@xincrement) * \tg@xincrement}{\tg@xmeasuremax}%
+		\edef\tg@tmpcnt{\tg@xmeasuremin}
+		\loop
+			\tg@pycalc{float(\rmpt\tg@width) * ((\tg@tmpcnt) - (\tg@xmin)) / ((\tg@xmax) - (\tg@xmin))}{\tg@pictx}%
+			\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@xformat}{\tg@xpresition}%
+			\put(\tg@pictx,-5){\makebox(0,0)[t]{\tg@measurefont\tg@tmpformat}}%
+			\tg@pycalc{\tg@tmpcnt + \tg@xincrement}{\tg@tmpcnt}%
+			\tg@pycalc{'t' if (\tg@tmpcnt <= \tg@xmeasuremax) else 'f'}{\tg@tmpbool}%
+			\if t\tg@tmpbool \repeat
+	\else
+		\tg@pycalc{10 ** math.ceil(math.log10(\tg@xmin))}{\tg@xmeasuremin}%
+		\tg@pycalc{10 ** math.floor(math.log10(\tg@xmax))}{\tg@xmeasuremax}%
+		\edef\tg@tmpcnt{\tg@xmeasuremin}
+		\loop
+			\tg@pycalc{float(\rmpt\tg@width) * math.log10(float(\tg@tmpcnt) / \tg@xmin) / math.log10(\tg@xmax / \tg@xmin)}{\tg@pictx}%
+			\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@xformat}{\tg@xpresition}%
+			\put(\tg@pictx,-5){\makebox(0,0)[t]{\tg@measurefont\tg@tmpformat}}%
+			\tg@pycalc{\tg@tmpcnt * 10}{\tg@tmpcnt}%
+			\tg@pycalc{'t' if (\tg@tmpcnt <= \tg@xmeasuremax) else 'f'}{\tg@tmpbool}%
+			\if t\tg@tmpbool \repeat
+	\fi
+% y軸
+	\immediate\write\tg@epsfile{1 \tg@yincrement\space \tg@ydivision\space cst\tg@frametype\space measure}%
+	\ifx\tg@ytype\tg@strlinear
+		% y軸数字
+		\tg@pycalc{math.ceil(float(\tg@ymin) / \tg@yincrement) * \tg@yincrement}{\tg@ymeasuremin}%
+		\tg@pycalc{math.floor(float(\tg@ymax) / \tg@yincrement) * \tg@yincrement}{\tg@ymeasuremax}%
+		\edef\tg@tmpcnt{\tg@ymeasuremin}
+		\loop
+			\tg@pycalc{float(\rmpt\tg@height) * ((\tg@tmpcnt) - (\tg@ymin)) / ((\tg@ymax) - (\tg@ymin))}{\tg@picty}%
+			\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@yformat}{\tg@ypresition}%
+			\put(-5,\tg@picty){\makebox(0,0)[r]{\tg@measurefont\tg@tmpformat}}%
+			\tg@pycalc{\tg@tmpcnt + \tg@yincrement}{\tg@tmpcnt}%
+			\tg@pycalc{'t' if (\tg@tmpcnt <= \tg@ymeasuremax) else 'f'}{\tg@tmpbool}%
+			\if t\tg@tmpbool \repeat
+	\else
+		\tg@pycalc{10 ** math.ceil(math.log10(\tg@ymin))}{\tg@ymeasuremin}%
+		\tg@pycalc{10 ** math.floor(math.log10(\tg@ymax))}{\tg@ymeasuremax}%
+		\edef\tg@tmpcnt{\tg@ymeasuremin}
+		\loop
+			\tg@pycalc{float(\rmpt\tg@height) * math.log10(float(\tg@tmpcnt) / \tg@ymin) / math.log10(\tg@ymax / \tg@ymin)}{\tg@picty}%
+			\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@yformat}{\tg@ypresition}%
+			\put(-5,\tg@picty){\makebox(0,0)[r]{\tg@measurefont\tg@tmpformat}}%
+			\tg@pycalc{\tg@tmpcnt * 10}{\tg@tmpcnt}%
+			\tg@pycalc{'t' if (\tg@tmpcnt <= \tg@ymeasuremax) else 'f'}{\tg@tmpbool}%
+			\if t\tg@tmpbool \repeat
+	\fi
+%u軸
+	\iftg@uaxis
+		\@tempdima=\tg@height
+		\advance \@tempdima 5\p@
+		\ifx\tg@frametype\tg@strsection\else\immediate\write\tg@epsfile{2 \tg@uincrement\space \tg@udivision\space cst\tg@frametype\space measure}\fi%
+		\if\tg@uformat n\else
+			\ifx\tg@utype\tg@strlinear
+				% u軸数字
+				\tg@pycalc{math.ceil(float(\tg@umin) / \tg@uincrement) * \tg@uincrement}{\tg@umeasuremin}%
+				\tg@pycalc{math.floor(float(\tg@umax) / \tg@uincrement) * \tg@uincrement}{\tg@umeasuremax}%
+				\edef\tg@tmpcnt{\tg@umeasuremin}
+				\loop
+					\tg@pycalc{float(\rmpt\tg@width) * ((\tg@tmpcnt) - (\tg@umin)) / ((\tg@umax) - (\tg@umin))}{\tg@pictu}%
+					\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@uformat}{\tg@upresition}%
+					\put(\tg@pictu,\rmpt\@tempdima){\makebox(0,0)[b]{\tg@measurefont\tg@tmpformat}}%
+					\tg@pycalc{\tg@tmpcnt + \tg@uincrement}{\tg@tmpcnt}%
+					\tg@pycalc{'t' if (\tg@tmpcnt <= \tg@umeasuremax) else 'f'}{\tg@tmpbool}%
+					\if t\tg@tmpbool \repeat
+			\else
+				\tg@pycalc{10 ** math.ceil(math.log10(\tg@umin))}{\tg@umeasuremin}%
+				\tg@pycalc{10 ** math.floor(math.log10(\tg@umax))}{\tg@umeasuremax}%
+				\edef\tg@tmpcnt{\tg@umeasuremin}%
+				\loop
+					\tg@pycalc{float(\rmpt\tg@width) * math.log10(float(\tg@tmpcnt) / \tg@umin) / math.log10(\tg@umax / \tg@umin)}{\tg@pictu}%
+					\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@uformat}{\tg@upresition}%
+					\put(\tg@pictu,\rmpt\@tempdima){\makebox(0,0)[b]{\tg@measurefont\tg@tmpformat}}%
+					\tg@pycalc{\tg@tmpcnt * 10}{\tg@tmpcnt}%
+					\tg@pycalc{'t' if (\tg@tmpcnt <= \tg@umeasuremax) else 'f'}{\tg@tmpbool}%
+					\if t\tg@tmpbool \repeat
+			\fi
+		\fi
+	\fi
+% r軸
+	\iftg@raxis
+		\@tempdima=\tg@width
+		\advance \@tempdima 5\p@
+		\ifx\tg@frametype\tg@strsection\else\immediate\write\tg@epsfile{3 \tg@rincrement\space \tg@rdivision\space cst\tg@frametype\space measure}\fi%
+		\if\tg@rformat n\else
+			\ifx\tg@rtype\tg@strlinear
+			% r軸数字
+				\tg@pycalc{math.ceil(float(\tg@rmin) / \tg@rincrement) * \tg@rincrement}{\tg@rmeasuremin}%
+				\tg@pycalc{math.floor(float(\tg@rmax) / \tg@rincrement) * \tg@rincrement}{\tg@rmeasuremax}%
+				\edef\tg@tmpcnt{\tg@rmeasuremin}
+				\loop
+					\tg@pycalc{float(\rmpt\tg@height) * ((\tg@tmpcnt) - (\tg@rmin)) / ((\tg@rmax) - (\tg@rmin))}{\tg@pictr}%
+					\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@rformat}{\tg@rpresition}%
+					\put(\rmpt\@tempdima,\tg@pictr){\makebox(0,0)[l]{\tg@measurefont\tg@tmpformat}}%
+					\tg@pycalc{\tg@tmpcnt + \tg@rincrement}{\tg@tmpcnt}%
+					\tg@pycalc{'t' if (\tg@tmpcnt <= \tg@rmeasuremax) else 'f'}{\tg@tmpbool}%
+					\if t\tg@tmpbool \repeat
+			\else
+				\tg@pycalc{10 ** math.ceil(math.log10(\tg@rmin))}{\tg@rmeasuremin}%
+				\tg@pycalc{10 ** math.floor(math.log10(\tg@rmax))}{\tg@rmeasuremax}%
+				\edef\tg@tmpcnt{\tg@rmeasuremin}
+				\loop
+					\tg@pycalc{float(\rmpt\tg@height) * math.log10(float(\tg@tmpcnt) / \tg@rmin) / math.log10(\tg@rmax / \tg@rmin)}{\tg@pictr}%
+					\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@rformat}{\tg@rpresition}%
+					\put(\rmpt\tmpcnta,\tg@pictr){\makebox(0,0)[l]{\tg@measurefont\tg@tmpformat}}%
+					\tg@pycalc{\tg@tmpcnt * 10}{\tg@tmpcnt}%
+					\tg@pycalc{'t' if (\tg@tmpcnt <= \tg@rmeasuremax) else 'f'}{\tg@tmpbool}%
+					\if t\tg@tmpbool \repeat
+			\fi
+		\fi
+	\fi
+	\immediate\write\tg@epsfile{\tg@framethick\space frame}%
+}
+%
+% 軸タイトル
+% #1 keyval
+% #2 軸タイトル
+\newdimen\tg@dim@titlexoffset
+\newdimen\tg@dim@titleyoffset
+\define@key{tg@title}{xoffset}{\advance \tg@dim@titlexoffset #1}% x方向ずらし 単位付き寸法
+\define@key{tg@title}{yoffset}{\advance \tg@dim@titleyoffset #1}% y方向ずらし
+%
+\def\xtitle{%
+\@ifnextchar<{\@xtitle}{\@xtitle<>}%
+}
+\def\@xtitle<#1>#2{%
+	\tg@dim@titlexoffset=0.5\tg@width
+	\tg@dim@titleyoffset=-25\p@
+	\setkeys{tg@title}{#1}%
+	\put(\rmpt\tg@dim@titlexoffset,\rmpt\tg@dim@titleyoffset){\makebox(0,0)[c]{#2}}%
+}
+\def\ytitle{%
+\@ifnextchar<{\@ytitle}{\@ytitle<>}%
+}
+\def\@ytitle<#1>#2{%
+	\tg@dim@titlexoffset=-35\p@
+	\tg@dim@titleyoffset=0.5\tg@height
+	\setkeys{tg@title}{#1}%
+	\put(\rmpt\tg@dim@titlexoffset,\rmpt\tg@dim@titleyoffset){\makebox(0,0)[c]{\rotatebox{90}{#2}}}%
+}
+\def\utitle{%
+\@ifnextchar<{\@utitle}{\@utitle<>}%
+}
+\def\@utitle<#1>#2{%
+	\tg@dim@titlexoffset=0.5\tg@width
+	\tg@dim@titleyoffset=25\p@
+	\advance \tg@dim@titleyoffset \tg@height
+	\setkeys{tg@title}{#1}%
+	\put(\rmpt\tg@dim@titlexoffset,\rmpt\tg@dim@titleyoffset){\makebox(0,0)[c]{#2}}%
+}
+\def\rtitle{%
+\@ifnextchar<{\@rtitle}{\@rtitle<>}%
+}
+\def\@rtitle<#1>#2{%
+	\tg@dim@titlexoffset=35\p@
+	\advance \tg@dim@titlexoffset \tg@width
+	\tg@dim@titleyoffset=0.5\tg@height
+	\setkeys{tg@title}{#1}%
+	\put(\rmpt\tg@dim@titlexoffset,\rmpt\tg@dim@titleyoffset){\makebox(0,0)[c]{\rotatebox{90}{#2}}}%
+}
+%
+% 枠線, 目盛, サブ目盛, プロット線の太さ指定
+\def\plotlinethickness#1{%
+	\def\tg@linewidth{#1}%
+}
+\def\pointsize#1{%
+\def\tg@pointsize{#1}%
+}
+%
+% 凡例の描画
+%
+% 凡例文字フォント指定 フォント(特にサイズ)指定は\plotの前に行う
+\def\tg@legendfont{\normalsize\rmfamily}
+\def\legendfont#1{\def\tg@legendfont{#1}}
+%
+\def\legendplotlength#1{%
+	\def\tg@legplotlength{#1}%
+}
+%
+% 凡例の記録
+% #1 凡例文字列, #2 点種, #3 点サイズ, #4 線種, #5 線サイズ 引数の意味は\tgplotと同じ
+\newdimen\tg@dim@legtexty
+\def\tg@makelegend#1#2#3#4#5{%
+	\expandafter\edef\csname tg@legendtext\the\tg@cnt@legend\endcsname##1##2##3{% 凡例文字を置くコマンド ##1: textのx ##2: y ##3: 凡例間間隔縦方向
+		\tg@dim@legtexty=##2
+		\@tempdima=##3
+		\advance \tg@dim@legtexty -\the\tg@cnt@legend\@tempdima
+		\noexpand\put(##1,\noexpand\rmpt\tg@dim@legtexty){\noexpand\makebox(0,0)[l]{\noexpand\box\csname tg@box\the\tg@cnt@legend\endcsname}}%
+	}%
+	\expandafter\edef\csname tg@legend\the\tg@cnt@legend\endcsname##1##2##3##4{% 凡例を置くコマンド ##1: x ##2: y ##3: 凡例間間隔 ##4: プロットの長さ
+		\@tempdimc=##1
+		\@tempdima=##2
+		\@tempdimb=##3
+		\advance \@tempdima -\the\tg@cnt@legend\@tempdimb
+		\@tempdimb=##4
+		\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{gsave}
+		\ifx#4\tg@strnolines
+			\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{/linedraw 0 def}
+		\else
+			\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{/linedraw 1 def}
+			\ifx#4\tg@strlines\else
+				\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{#4 \space setdash}
+			\fi
+		\fi
+		\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{\noexpand\rmpt\@tempdimc \space \noexpand\rmpt\@tempdima \space \noexpand\rmpt\@tempdimb\space #5\space legendline}
+		\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{grestore}
+		\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{gsave}
+		\ifnum#2>0 \noexpand\immediate\noexpand\write\noexpand\tg@epsfile{\noexpand\rmpt\@tempdimc \space \noexpand\rmpt\@tempdimb\space 0.5 mul add \space \noexpand\rmpt\@tempdima \space #2\space #3\space #5\space point} \fi
+		\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{grestore}%
+	}%
+}
+%
+% #1: textleft #2: top #3: legparsep #4 cnt@legend
+\def\tg@legtext#1#2#3#4{%
+\@tempcnta=#4
+	\advance \@tempcnta -1
+	\loop
+	\csname tg@legendtext\the\@tempcnta\endcsname#1#2#3
+	\advance \@tempcnta -1
+	\ifnum\@tempcnta>-1 \repeat%
+}
+%
+% 凡例を置く
+% #1 keyval, #2: 左上x座標, #3: 左上y座標 (#2,#3)は最上部の凡例プロット左端
+%
+\define@key{tg@legend}{parsep}{\edef\tg@legparsep{#1}}%
+\define@key{tg@legend}{plotlength}{\edef\tg@legplotlength{#1}}%
+\define@key{tg@legend}{labelsep}{\edef\tg@leglabelsep{#1}}%
+\define@key{tg@legend}{hmargin}{\edef\tg@leghmargin{#1}}% horizontal margin
+\define@key{tg@legend}{vmargin}{\edef\tg@legvmargin{#1}}% vertical margin
+%
+\def\legend{%
+\@ifnextchar<{\tg@legend}{\tg@legend<>}%
+}
+\def\tg@legend<#1>(#2,#3){%
+	\setbox0=\hbox{Hg}
+	\def\tg@legparsep{14pt}
+	\def\tg@legplotlength{20pt}
+	\def\tg@leglabelsep{1em}
+	\def\tg@leghmargin{5pt}
+	\def\tg@legvmargin{5pt}
+	\setkeys{tg@legend}{#1}
+	\edef\tg@legleft{#2}
+	\edef\tg@legtop{#3}
+%
+	\@tempdima=\tg@legleft
+	\advance \@tempdima \tg@legplotlength
+	\advance \@tempdima \tg@leglabelsep
+	\edef\tg@legtextleft{\rmpt\@tempdima}
+%
+	\@tempdima=\tg@leghmargin
+	\multiply \@tempdima 2
+	\advance \@tempdima \tg@legplotlength
+	\advance \@tempdima \tg@leglabelsep
+	\advance \@tempdima \tg@legtextwidth
+	\edef\tg@legrectw{\rmpt\@tempdima}
+%
+	\@tempcnta=\tg@cnt@legend
+	\typeout{\the\tg@cnt@legend}
+	\advance \@tempcnta -1
+	\@tempdima=\tg@legparsep
+	\multiply\@tempdima\the\@tempcnta
+	\@tempdimb=\tg@legvmargin
+	\multiply \@tempdimb 2
+	\advance \@tempdima \@tempdimb
+	\advance \@tempdima \ht0
+	\advance \@tempdima \dp0
+	\edef\tg@legrecth{\rmpt\@tempdima}
+%
+	\@tempdima=\tg@legleft
+	\advance \@tempdima -\tg@leghmargin
+	\edef\tg@legrectx{\rmpt\@tempdima}
+	\@tempdima=\tg@legtop
+	\advance \@tempdima \tg@legvmargin
+	\advance \@tempdima 0.5\ht0
+	\edef\tg@legrecty{\rmpt\@tempdima}
+%
+	\tg@whiterect\tg@legrectx\tg@legrecty\tg@legrectw\tg@legrecth
+%
+	\@tempcnta=\the\tg@cnt@legend
+	\advance \@tempcnta -1
+	\loop
+	\csname tg@legend\the\@tempcnta\endcsname\tg@legleft\tg@legtop\tg@legparsep\tg@legplotlength
+	\advance \@tempcnta -1
+	\ifnum\@tempcnta>-1 \repeat
+	\def\tg@postincludegraphics{\tg@legtext\tg@legtextleft\tg@legtop\tg@legparsep\tg@cnt@legend}%
+}
+%
+% 白い長方形(凡例の下地) #1#2: 左上座標(postscriptのpt単位), #3: 幅, #4: 高さ
+%
+\def\tg@whiterect#1#2#3#4{%
+	\immediate\write\tg@epsfile{#1\space #2\space #3\space #4\space whiterect}%
+}
+%
+% 線
+%
+\define@key{tg@line}{dash}{\edef\tg@linedash{#1}}% 破線, psの書式
+\define@key{tg@line}{linethickness}{\edef\tg@linewidth{#1}}% 線の太さ[pt]
+%
+% [横参照軸,縦参照軸](始点)(終点)
+%
+\def\tgline{%
+	\@ifnextchar<{\tg@line}{\tg@line<>}%
+}
+\def\tg@line<#1>[#2,#3](#4,#5)(#6,#7){%
+	\let\tg@linedash\relax
+	\edef\tg@linewidth{1}
+	\setkeys{tg@line}{#1}
+	\immediate\write\tg@epsfile{gsave}%
+	\ifx\tg@linedash\relax\else\immediate\write\tg@epsfile{\tg@linedash\space setdash}\fi%
+	\immediate\write\tg@epsfile{\tg@linewidth\space setlinewidth}%
+	\immediate\write\tg@epsfile{newpath}%
+	\immediate\write\tg@epsfile{#4 (#2) xyur2num coord #5 (#3) xyur2num coord moveto}%
+	\immediate\write\tg@epsfile{#6 (#2) xyur2num coord #7 (#3) xyur2num coord lineto}%
+	\immediate\write\tg@epsfile{stroke}%
+	\immediate\write\tg@epsfile{grestore}%
+}
+%
+% 矢印 引数は線と同じ
+%
+\define@key{tg@arrow}{dash}{\edef\tg@linedash{#1}}% 破線, psの書式
+\define@key{tg@arrow}{linethickness}{\edef\tg@linewidth{#1}}% 線の太さ[pt]
+\define@key{tg@arrow}{length}{\edef\tg@arrowlen{#1}}% 鏃の長さ[pt]
+\define@key{tg@arrow}{angle}{\edef\tg@arrowangle{#1}}% 鏃の開き角度[^\circ]
+\define@key{tg@arrow}{type}{\edef\tg@arrowtype{#1}}% 鏃のつき方(0: なし, 1: 終点のみ, 2: 始点のみ, 3: 両方)
+\def\tgarrow{%
+	\@ifnextchar<{\tg@arrow}{\tg@arrow<>}%
+}
+\def\tg@arrow<#1>[#2,#3](#4,#5)(#6,#7){%
+	\let\tg@linedash\relax
+	\edef\tg@linewidth{1}
+	\edef\tg@arrowangle{15}
+	\edef\tg@arrowlen{7}
+	\edef\tg@arrowtype{1}
+	\setkeys{tg@arrow}{#1}
+	\immediate\write\tg@epsfile{gsave}%
+	\ifx\tg@linedash\relax\else\immediate\write\tg@epsfile{\tg@linedash\space setdash}\fi%
+	\immediate\write\tg@epsfile{\tg@linewidth\space setlinewidth}%
+	\immediate\write\tg@epsfile{#4 (#2) xyur2num coord #5 (#3) xyur2num coord #6 (#2) xyur2num coord #7 (#3) xyur2num coord \tg@arrowangle\space \tg@arrowlen\space \tg@arrowtype\space arrow}%
+	\immediate\write\tg@epsfile{grestore}%
+}
+%
+% その他の文字列 引数は\tgputstring<#1>[#2,#3](#4,#5)#6
+% #1: keyval, #2,#3: 参照軸, #4,#5 文字列中心座標, #6: 文字列
+%
+\def\tgputstring{%
+	\futurelet\tg@nextchar\tg@putstring%
+}
+\def\tg@putstring{%
+	\ifx\tg@nextchar<
+		\def\tg@next{\tg@@putstring}
+	\else
+		\def\tg@next{\tg@@putstring<>}
+	\fi
+	\tg@next%
+}
+% 文字列描画準備(文字列の箱を作る)
+\define@key{tg@putstring}{align}{\edef\tg@textalign{#1}}
+\define@key{tg@putstring}{margin}{\edef\tg@textmargin{#1}}
+\def\tg@@putstring<#1>[#2,#3](#4,#5)#6{%
+	\edef\tg@textalign{c}
+	\edef\tg@textmargin{2}
+	\setkeys{tg@putstring}{#1}%
+%
+	\expandafter\newbox\csname tg@strbox\the\tg@cnt@str\endcsname%
+	\expandafter\setbox\csname tg@strbox\the\tg@cnt@str\endcsname=\hbox{#6}%
+	\if#2u
+		\ifx\tg@utype\tg@strlinear
+			\tg@pycalc{float(\rmpt\tg@width) * ((#4) - (\tg@umin)) / ((\tg@umax) - (\tg@umin))}{\tg@strx}%
+		\else
+			\tg@pycalc{float(\rmpt\tg@width) * math.log10(float(#4) / (\tg@umin)) / math.log10((\tg@umax) / (\tg@umin))}{\tg@strx}%
+		\fi
+	\else
+		\ifx\tg@xtype\tg@strlinear
+			\tg@pycalc{float(\rmpt\tg@width) * ((#4) - (\tg@xmin)) / ((\tg@xmax) - (\tg@xmin))}{\tg@strx}%
+		\else
+			\tg@pycalc{float(\rmpt\tg@width) * math.log10(float(#4) / (\tg@xmin)) / math.log10((\tg@xmax) / (\tg@xmin))}{\tg@strx}%
+		\fi
+	\fi%
+	\if#3r
+		\ifx\tg@rtype\tg@strlinear
+			\tg@pycalc{float(\rmpt\tg@height) * ((#5) - (\tg@rmin)) / ((\tg@rmax) - (\tg@rmin))}{\tg@stry}%
+		\else
+			\tg@pycalc{float(\rmpt\tg@height) * math.log10(float(#5) / (\tg@rmin)) / math.log10((\tg@rmax) / (\tg@rmin))}{\tg@stry}%
+		\fi
+	\else
+		\ifx\tg@ytype\tg@strlinear
+			\tg@pycalc{float(\rmpt\tg@height) * ((#5) - (\tg@ymin)) / ((\tg@ymax) - (\tg@ymin))}{\tg@stry}%
+		\else
+			\tg@pycalc{float(\rmpt\tg@height) * math.log10(float(#5) / (\tg@ymin)) / math.log10((\tg@ymax) / (\tg@ymin))}{\tg@stry}%
+		\fi
+	\fi
+%
+	\expandafter\edef\csname tg@putstr\the\tg@cnt@str\endcsname{%
+		\noexpand\put(\tg@strx,\tg@stry){\noexpand\makebox(0,0)[\tg@textalign]{\noexpand\box\csname tg@strbox\the\tg@cnt@str\endcsname}}}%
+%
+% 文字列の下地となる白四角枠
+	\@tempdima=-0.5\wd\csname tg@strbox\the\tg@cnt@str\endcsname
+	\@tempdimb=0.5\ht\csname tg@strbox\the\tg@cnt@str\endcsname
+	\advance \@tempdimb 0.5\dp\csname tg@strbox\the\tg@cnt@str\endcsname
+	\expandafter\@tfor\expandafter\tg@ch\expandafter:\expandafter=\tg@textalign\do{%
+		\if\tg@ch l
+			\@tempdima=\z@
+		\else
+			\if\tg@ch b
+				\advance \@tempdimb \@tempdimb
+			\else
+				\if\tg@ch r
+					\advance \@tempdima \@tempdima
+				\else
+					\if\tg@ch t
+						\@tempdimb=\z@
+					\fi
+				\fi
+			\fi
+		\fi%
+	}
+	\advance \@tempdima \tg@strx\p@
+	\advance \@tempdimb \tg@stry\p@
+	\advance \@tempdima -\tg@textmargin\p@
+	\advance \@tempdimb \tg@textmargin\p@
+	\edef\tg@strx{\rmpt\@tempdima}
+	\edef\tg@stry{\rmpt\@tempdimb}
+	\@tempdima=2\p@
+	\@tempdima=\tg@textmargin\@tempdima
+	\@tempdimb=\@tempdima
+	\advance \@tempdima \wd\csname tg@strbox\the\tg@cnt@str\endcsname
+	\advance \@tempdimb \ht\csname tg@strbox\the\tg@cnt@str\endcsname
+	\advance \@tempdimb \dp\csname tg@strbox\the\tg@cnt@str\endcsname
+\immediate\write\tg@epsfile{\tg@strx\space \tg@stry\space \rmpt\@tempdima\space \rmpt\@tempdimb\space whiterect}%
+	\advance \tg@cnt@str 1%
+}
+%
+% 文字列の箱を置く. includegraphicsの後に行う(そうしないと文字列がグラフの下になる)
+\def\tg@putstr{%
+	\advance \tg@cnt@str -1%
+	\loop
+	\csname tg@putstr\the\tg@cnt@str\endcsname%
+	\advance \tg@cnt@str -1
+	\ifnum\tg@cnt@str>-1 \repeat%
+}
+%
+%
+\def\tg@ul@ps{0.996264}
+%
+% texgraph環境
+% #1, #2: width, height of the plot area.
+% #3, #4: (temporarily) left, bottom margin
+%
+\define@key{tg@texgraph}{leftmargin}{\tg@leftmargin=#1}%
+\define@key{tg@texgraph}{bottommargin}{\tg@bottommargin=#1}%
+\define@key{tg@texgraph}{topmargin}{\tg@topmargin=#1}%
+\define@key{tg@texgraph}{rightmargin}{\tg@rightmargin=#1}%
+\def\texgraph{%
+	\@ifnextchar<{\@texgraph}{\@texgraph<>}%
+}
+\def\@texgraph<#1>(#2,#3){%
+	\tg@leftmargin=14mm
+	\tg@rightmargin=2mm
+	\tg@topmargin=2mm
+	\tg@bottommargin=10mm
+	\setkeys{tg@texgraph}{#1}%
+	\tg@pytest
+	\tg@width=#2
+	\tg@height=#3
+	\tg@pictwidth=\tg@width
+	\advance \tg@pictwidth \tg@leftmargin
+	\advance \tg@pictwidth \tg@rightmargin
+	\tg@pictheight=\tg@height
+	\advance \tg@pictheight \tg@bottommargin
+	\advance \tg@pictheight \tg@topmargin
+	\tg@pswidth=\tg@ul@ps\tg@width
+	\tg@psheight=\tg@ul@ps\tg@height
+	\refstepcounter{tg@epsnum}%
+	\immediate\openout\tg@epsfile=\jobname\tg@epsname\thetg@epsnum.eps%
+	\immediate\write\tg@epsfile{\@percent !PS-Adobe-3.0 EPSF-3.0}%
+	\immediate\write\tg@epsfile{\@percent\@percent BoundingBox: 0 0 \rmptint\tg@pswidth\space \rmptint\tg@psheight}%
+	\immediate\write\tg@epsfile{\@percent\@percent HiResBoundingBox: 0 0 \rmpt\tg@pswidth\space \rmpt\tg@psheight}%
+	\immediate\write\tg@epsfile{\tg@ul@ps\space\tg@ul@ps\space scale}%
+	\immediate\write\tg@epsfile{gsave}%
+	\immediate\write\tg@epsfile{/framewidth \rmpt\tg@width\space def}%
+	\immediate\write\tg@epsfile{/frameheight \rmpt\tg@height\space def}%
+	\tg@epspreamble
+	\tg@leftmargin=-\tg@leftmargin
+	\tg@bottommargin=-\tg@bottommargin
+	\begin{picture}(\rmpt\tg@pictwidth,\rmpt\tg@pictheight)(\rmpt\tg@leftmargin,\rmpt\tg@bottommargin)
+	%
+	% 変数の初期化
+	\def\tg@pointsize{5}
+	\def\tg@legplotlength{50}
+	\def\tg@linewidth{0.5}
+	\def\tg@postincludegraphics{\relax}
+	\tg@legtextwidth=\z@
+	\tg@cnt@legend=0
+	\tg@cnt@str=0%
+}
+%
+\def\endtexgraph{%
+	\immediate\write\tg@epsfile{grestore}%
+	\immediate\write\tg@epsfile{\@percent\@percent EOF}%
+	\immediate\closeout\tg@epsfile%
+	\put(0,0){\includegraphics[width=\tg@width,hiresbb]{\jobname\tg@epsname\thetg@epsnum.eps}}%
+%	\put(0,0){\includegraphics[width=\tg@pswidth,hiresbb]{\jobname\tg@epsname\thetg@epsnum.eps}}%
+	\tg@postincludegraphics%
+	\ifnum\tg@cnt@str>0 \tg@putstr \fi
+	\end{picture}%
+}

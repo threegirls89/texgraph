@@ -1,0 +1,630 @@
+% 横に長い数式を収めるために特化したきつきつ版面.
+%
+\documentclass[10pt,a4j,twoside]{jsarticle}
+%
+%\usepackage{bounddvi}% MacでTypesetする場合のみ
+\usepackage{amsmath,amssymb}
+\usepackage{bm}% 太字. vectorを書く時.
+\usepackage[dvipdfmx]{graphicx,color}
+%
+\usepackage{texgraph}
+%
+%%%%寸法設定%%%%
+\setlength{\topmargin}{11truemm}
+\addtolength{\topmargin}{-1truein}
+\setlength{\oddsidemargin}{25truemm}
+\addtolength{\oddsidemargin}{-1truein}
+\setlength{\evensidemargin}{15truemm}
+\addtolength{\evensidemargin}{-1truein}
+\setlength{\textheight}{260truemm}
+\setlength{\fullwidth}{170truemm}
+\setlength{\textwidth}{\fullwidth}
+%
+%%%%float(図表)配置のparameters%%%%
+\renewcommand\topfraction{.9}% 頁上部のfloatで占める最大割合.
+\renewcommand\bottomfraction{.9}% 頁下部のfloatで占める最大割合.
+\renewcommand\textfraction{.05}% 1頁のテキスト部の占める最小割合. 
+\renewcommand\floatpagefraction{.5}% floatが単独頁になるときの最小割合. 
+\setcounter{totalnumber}{5}% 1頁のfloatの数
+\setcounter{topnumber}{3}% 頁上部のfloatの数
+\setcounter{bottomnumber}{3}% 頁下部のfloatの数
+%
+%
+\allowdisplaybreaks% 数式中での改頁許可.
+%
+% enumerateの1段目を(1)にする.
+\def\labelenumi{(\arabic{enumi})}
+% enumerateの2段目を(i)にする.
+\def\labelenumii{(\roman{enumii})}
+%
+\def\tabref#1{\tablename\ref{#1}}
+\def\figref#1{\figurename\ref{#1}}
+\def\pref#1{\pageref{#1}頁}
+\def\secref#1{\ref{#1}節}
+%
+\pagestyle{myheadings}
+\markboth{}{\texttt{texgraph}コマンドリファレンス}
+%
+\def\Section#1{%
+\clearpage
+\section{#1}
+\markboth{\thesection\hspace{1zw}#1}{\texttt{texgraph}コマンドリファレンス}%
+}
+%
+\makeatletter
+%\makeatletter -- \makeatotherの間 (c) 清藤晃.
+%%%%曜日 (Zeller の公式)
+\def\dayofweek{%
+{\count0=\year \count1=\month
+\ifnum \count1<3
+ \advance \count0 by -1
+ \advance \count1 by 12
+\fi
+\multiply \count1 by 13
+\advance \count1 by 8
+\divide \count1 by 5
+\advance \count1 by \count0
+\divide \count0 by 4
+\advance \count1 by \count0
+\divide \count0 by 25
+\advance \count1 by -\count0
+\divide \count0 by 4
+\advance \count1 by \count0
+\advance \count1 by \day
+\count0=\count1
+\divide \count1 by 7
+\multiply \count1 by 7
+\advance \count0 by -\count1
+\ifcase \count0 日\or 月\or 火\or 水\or 木\or 金\or 土\fi}}
+%
+%%%%時刻を表示.
+\def\ddigit#1{\setbox0=\hbox{9}\setbox1=\hbox{#1}%
+  \ifdim \wd0<\wd1 #1\else 0#1\fi}
+\newcounter{hour}
+\newcounter{HOUR}
+\newcounter{minuite}
+\setcounter{hour}{\the\time} \divide \c@hour by 60
+\setcounter{HOUR}{\thehour} \multiply \c@HOUR by 60
+\setcounter{minuite}{\the\time} \advance \c@minuite by -\c@HOUR
+\def\digitalhour{\ddigit{\thehour}}
+\def\digitalminuite{\ddigit{\theminuite}}%
+%
+\global\let\@date\empty
+\renewcommand{\maketitle}{%
+\begin{center}
+\large
+{\gtfamily\bfseries\huge \@title}
+\par
+\bigskip
+\ifx\@date\empty
+\today (\dayofweek)
+\digitalhour:\digitalminuite
+\else
+\@date
+\fi
+作成.
+\hfil \@author.
+\end{center}%
+\global\let\@date\empty
+\global\let\date\relax%
+}
+\def\date#1{\gdef\@date{#1}}
+\makeatother
+%
+\def\circlesep{%
+\begin{center}$\circledcirc\qquad\circledcirc\qquad\circledcirc$\end{center}%
+}
+%
+\def\bs{\texttt{\symbol{'134}}}
+\def\lb{\texttt{\symbol{'173}}}
+\def\rb{\texttt{\symbol{'175}}}
+%
+\begin{document}
+\thispagestyle{empty}
+\title{\texttt{texgraph}コマンドリファレンス\\ \strut {\mdseries\large for \texttt{texgraph.sty} ver.\ 1.0.0}}
+\author{threegirls89}
+\maketitle
+%
+\begin{abstract}
+\texttt{texgraph}は\LaTeX{}上で外部のテキストファイルに記述されたデータのグラフをプロットするためのスタイルファイル群です.
+座標の計算にpythonを用いているため, これの導入が必須です.
+バグ報告, 修正, その他のご要望は
+\begin{center}
+threegirls89.asm@gmail.com
+\end{center}
+へお願いいたします.%
+\end{abstract}
+%
+\tableofcontents
+%
+\vfill
+\begin{flushright}
+copyright \copyright\ 2015--2016 threegirls89.
+\end{flushright}
+
+\Section{はじめに}
+本パッケージ\texttt{texgraph}は\LaTeX{}上で外部のテキストファイルに記述されたデータのグラフをプロットするためのスタイルファイル群である.
+
+本パッケージの特徴を述べる.
+グラフ画像はeps形式で生成される.
+\LaTeX\ $+$ dvipdfmx, pdf\LaTeX{}などtexファイルから直接pdf文書を得ることが主流の現代ではeps形式はobsoleteであると言えるが, postscript言語の持つ(\TeX{}と比較して)高い数値処理能力を利用するため, 加えてpostscript側で各種描画命令を函数化することにより\TeX{}プログラミングの負荷を削減するために採用している.
+グラフ上の文字は\TeX{}により埋め込んでいる.
+picture環境中でeps画像を取り込み, picture環境の機能で文字を指定座標に置くことでグラフ描画を実現する.
+この方法により\TeX{}のフォントをグラフ上で使用でき, グラフ中の文字サイズを本文に合わせることが容易になる, 指数などの表記として\TeX{}の数式を使用できる利点がある.
+
+また, 取りうる数値幅の大きい目盛数字を\TeX{}で扱うことは困難であるため, 目盛数字描画の計算をpythonに外注している.
+
+\circlesep
+
+以下蛇足: 開発の経緯について.
+
+筆者はsma4win\footnote{sma4 for windowsのページ\texttt{http://hp.vector.co.jp/authors/VA002995/soft/sma4win.htm}より入手可能. 古いソフトウェアだがwindows 10でも使用可能.}なるグラフ描画ソフトウェアを愛用していた. このソフトウェアはグラフ描画までの手順が少なくデータファイルから手早くグラフを得られる, (一見画面表示は貧弱だが)印刷したグラフが綺麗である利点を持つ一方, windows専用である, png或いはwmf(windows metafile)形式のみの出力であるため, 仮想Postscriptプリンタを用いて\LaTeX{}で容易に利用可能なヴェクタグラフィクスであるeps画像を得るという煩雑な手順を経て利用していた.
+大学の実験レポートを書く際にこの手順が煩わしく感じられるようになり, \LaTeX{}にグラフ描画コマンドを定義すればグラフの描画を\LaTeX{}上で完結することができ, かつプラットフォーム依存も解消し, レポート執筆の手間の短縮に寄与すると考え本スタイルファイルを製作した.
+
+
+\Section{使用方法}
+本パッケージの使用方法を説明する.
+
+\subsection{ファイル構成}
+本パッケージの構成は以下の通りである.
+\begin{itemize}
+\item \texttt{texgraph.sty}
+\item \texttt{tgepspreamble.sty}
+\end{itemize}
+\texttt{texgraph.sty}が本体であり, \texttt{tgepspreamble.sty}はpostscriptで書かれたグラフ描画函数一式をepsファイルに書き出すためのスタイルファイルである.
+両者は同一階層に置かれなければならない.
+
+\subsection{組版方法}
+本パッケージは\LaTeXe{}の使用を前提とする.
+本パッケージを利用するには\texttt{texgraph.sty}を\verb|\usepackage|する.
+また, postscript画像を取り込むため\texttt{graphicx.sty}を\verb|\usepackage|することが必須である.
+適切なdviドライバを指定して\verb|\usepackage|してほしい.
+
+また, \LaTeX{}のオプションに\texttt{--shell-escape}を付加しなければならない.
+これは計算処理をpythonスクリプトに行わせる関係で, \verb|\write18|コマンドを実行する必要があるからである.
+この機能はシェルにおいて任意のコマンドを実行することを許可するため, 危険を伴う.
+信頼の置けるコードに対してのみ実行すべきである.
+
+更に, pythonを実行できる必要がある.
+UNIX, Mac OS Xでは標準配布なので既に実行できる状態にあるが, Windowsではpythonをインストールし, 単独で実行できるよう環境変数Pathを通す必要がある.
+pythonのVersion 2.xか3.xかは問わない.
+
+\subsection{データファイル形式}
+本パッケージの読み込むデータファイルは以下に示す形式である必要がある.
+基本的にsma4winのデータファイル形式に準ずる. 異なる部分は脚注にて補足する.
+\begin{enumerate}
+\item データは列毎に並ぶ. 1列が1系列である.
+\item 全ての列のデータ数は等しくなければならない. 不揃いの場合は不足分を$=$で埋める.\footnote{sma4winでは各列の行数は不揃いで好い.}
+\item スペース or タブ区切りのテキストファイル (CSVは不可). 連続したスペース or タブは1つのスペースとして扱う.\footnote{sma4winでは1つのスペース or タブが1列の区切りとなる. 2つの連続したスペースは間に空文字列データがあるものとして扱われる.}
+\item 行頭が\#の行はコメント行.
+\item コメント行以外の行に数値, 区切り文字以外と見なされる文字(列)があってはならない.\footnote{sma4winでは数値, 区切り文字以外の文字(列)は無視される.}
+\item $=$はプロット線の分割にも使用できる. データファイル上$=$より上にある点と下にある点の間に線は描画されない.
+\end{enumerate}
+
+\subsection{参照軸}
+本パッケージでは2種の横軸, 縦軸が利用可能である.
+横軸は$x$軸, $u$軸の2種, 縦軸は$y$軸, $r$軸の2種が存在する.\footnote{軸の呼称はsma4winに倣っている.}
+2つの横軸, 縦軸には異なる数値範囲, 軸タイプ (線型 or 対数) を設定できる.
+
+グラフ上の目盛数字, 軸タイトルの位置は$x$軸: 下, $y$軸: 左, $u$軸: 上, $r$軸: 右となる.
+また, 枠タイプを方眼とした場合は$x$軸, $y$軸の目盛線のみ描画される.
+
+
+\Section{基本文例}
+本パッケージを使用する際の文例を以下に示す.
+
+仕様により, 軸の設定をしなければ枠の描画, データのプロットは行えず, また後に実行したコマンドによる描画が上に重なるため, 枠描画コマンドを後に書くと罫線がプロット点の上に重なるという制約が存在する.
+軸の設定, 枠の設定, プロット, 凡例描画, その他の文字列はこの順に書くことを推奨する.
+
+\begin{verbatim}
+\documentclass[...]{...}
+\usepackage[...]{graphicx}
+\usepackage{texgraph}
+...
+\begin{document}
+...
+\begin{texgraph}<bottommargin=10pt,leftmargin=10pt,rightmargin=10pt,topmargin=10pt>%
+    (10truecm,10truecm)
+% 軸の設定
+\xaxis<increment=0.5,division=5,plottype=linear,format=f,presition=1>(-1,1)
+\yaxis<increment=0.5,division=5,plottype=linear,format=f,presition=1>(-1,1)
+% 枠の設定, 描画
+\frame{measurelength=5,measurethickness=0.5,submeasurethickness=0.1,%
+    framethickness=1,frametype=section}
+\xtitle{xxxx}
+% 軸タイトル
+\ytitle{yyyy}
+% データファイルをプロット
+\plot<pointtype=1,linetype=1,linethickness=0.5,pointsize=5>{hoge.txt}[x:1][y:2]{hoge}
+\plot<pointtype=2,linetype=1,linethickness=0.5,pointsize=5>{hoge.txt}[x:1][y:3]{piyo}
+% 凡例の描画
+\legend<parsep=\baselineskip,plotlength=20pt,labelsep=1zw,hmargin=5pt,vmargin=5pt>%
+    (1truecm,3truecm)
+% その他文字列
+\tgputstr<margin=1,align=t>[x,y](0.242,0){0.242}
+% その他線
+\tgline<linethickness=0.3>[x,y](0.242,0)(0.242,1)
+\end{texgraph}
+...
+\end{document}
+\end{verbatim}
+
+
+\Section{コマンド詳説}
+本パッケージを構成するコマンドを解説する.
+
+keyvalの設定項目の内, デフォルト値があるものは省略可能である. デフォルト値がないものは省略不可.
+
+
+\subsection{\texttt{texgraph}環境}
+本スタイルファイルを使用して1枚のグラフを描画するための環境が\texttt{texgraph}環境である.
+\texttt{texgraph.sty}の最も基本的なコマンドである.
+
+\begin{quote}
+\begin{tabular}{lll}
+書式 & \multicolumn{2}{l}{\texttt{\bs begin\lb texgraph\rb<\#1>(\#2,\#3)}}\dots \texttt{\bs end\lb texgraph\rb} \\
+引数 & \#1 & keyval (省略可).\\
+ & \#2 & グラフ幅 (寸法付き数字). \\
+ & \#3 & グラフ高さ (寸法付き数字).
+\end{tabular}
+\end{quote}
+
+keyvalで設定する内容は以下の通りである.
+
+\begin{quote}
+\begin{tabular}{ll}
+topmargin & 上方向余白 (寸法付き数字, デフォルトは2mm). \\
+bottommargin & 下方向余白 (デフォルトは10mm). \\
+leftmargin & 左方向余白 (デフォルトは14mm). \\
+rightmargin & 右方向余白 (デフォルトは2mm).
+\end{tabular}
+\end{quote}
+
+
+\subsection{プロットコマンド}
+データをプロットするコマンドには\texttt{\bs plot}がある.
+プロットコマンドは軸設定コマンドより後に書かれなければならない.
+また, 仕様により後に実行したコマンドによる描画が上に重なるため, 枠描画コマンドを後に書くと罫線がプロット点の上に重なる.
+
+\begin{quote}
+\begin{tabular}{lll}
+書式 & \multicolumn{2}{l}{\texttt{\bs plot<\#1>\lb\#2\rb[\#3:\#4][\#5:\#6]\#7}} \\
+引数 & \#1 & keyval (省略可). \\
+ & \#2 & データファイル名. \\
+ & \#3 & 横参照軸 ($x$ or $u$). \\
+ & \#4 & データファイル中の横軸の値が書かれた列(先頭を第1列とする). \\
+ & \#5 & 縦参照軸 ($y$ or $r$). \\
+ & \#6 & データファイル中の縦軸の値が書かれた列. \\
+ & \#7 & 凡例文字列. 凡例を表示しない時は空文字列\{\}を指定する.
+\end{tabular}
+\end{quote}
+
+keyvalで設定する内容は以下の通りである.
+\begin{quote}
+\begin{tabular}{ll}
+pointtype & 点の種類. デフォルトは0. 下記の\textbf{注意}をみよ. \\
+pointsize &  点サイズ(数字のみ, pt単位). デフォルトは5. \\
+linetype & 線種(0: 線なし, 1: 実線, postscript書式の破線の何れか). デフォルトは1. \\
+linethickness & 線の太さ (数字のみ, pt単位). デフォルトは1. \\
+\end{tabular}
+\end{quote}
+
+\textbf{注意}. pointtypeは0--32の数字を指定する.
+点は32種類用意されている.
+0は点なしを意味する.
+数字1--32に対応する点を\figref{fig:pointsample}に示す.
+
+\begin{figure}[tb]
+\centering
+\makeatletter
+\begin{texgraph}<leftmargin=2zw>(12cm,4cm)
+\xaxis<plottype=linear,division=1>(0,12)
+\yaxis<plottype=linear,division=1>(0,4)
+\immediate\write\tg@epsfile{/cm {28.452756 mul} def}%
+\tgputstring<align=rb>[x,y](0,3.45){数字}
+\tgputstring<align=r>[x,y](0,3.18){点}
+\immediate\write\tg@epsfile{0.5 cm 3.2 cm 1 10 0.5 point}%
+\tgputstring<align=b>[x,y](0.5,3.5){1}
+\immediate\write\tg@epsfile{1.5 cm 3.2 cm 2 10 0.5 point}%
+\tgputstring<align=b>[x,y](1.5,3.5){2}
+\immediate\write\tg@epsfile{2.5 cm 3.2 cm 3 10 0.5 point}%
+\tgputstring<align=b>[x,y](2.5,3.5){3}
+\immediate\write\tg@epsfile{3.5 cm 3.2 cm 4 10 0.5 point}%
+\tgputstring<align=b>[x,y](3.5,3.5){4}
+\immediate\write\tg@epsfile{4.5 cm 3.2 cm 5 10 0.5 point}%
+\tgputstring<align=b>[x,y](4.5,3.5){5}
+\immediate\write\tg@epsfile{5.5 cm 3.2 cm 6 10 0.5 point}%
+\tgputstring<align=b>[x,y](5.5,3.5){6}
+\immediate\write\tg@epsfile{6.5 cm 3.2 cm 7 10 0.5 point}%
+\tgputstring<align=b>[x,y](6.5,3.5){7}
+\immediate\write\tg@epsfile{7.5 cm 3.2 cm 8 10 0.5 point}%
+\tgputstring<align=b>[x,y](7.5,3.5){8}
+\immediate\write\tg@epsfile{8.5 cm 3.2 cm 9 10 0.5 point}%
+\tgputstring<align=b>[x,y](8.5,3.5){9}
+\immediate\write\tg@epsfile{9.5 cm 3.2 cm 10 10 0.5 point}%
+\tgputstring<align=b>[x,y](9.5,3.5){10}
+\immediate\write\tg@epsfile{10.5 cm 3.2 cm 11 10 0.5 point}%
+\tgputstring<align=b>[x,y](10.5,3.5){11}
+\immediate\write\tg@epsfile{11.5 cm 3.2 cm 12 10 0.5 point}%
+\tgputstring<align=b>[x,y](11.5,3.5){12}
+\immediate\write\tg@epsfile{0.5 cm 1.7 cm 13 10 0.5 point}%
+\tgputstring<align=b>[x,y](0.5,2){13}
+\immediate\write\tg@epsfile{1.5 cm 1.7 cm 14 10 0.5 point}%
+\tgputstring<align=b>[x,y](1.5,2){14}
+\immediate\write\tg@epsfile{2.5 cm 1.7 cm 15 10 0.5 point}%
+\tgputstring<align=b>[x,y](2.5,2){15}
+\immediate\write\tg@epsfile{3.5 cm 1.7 cm 16 10 0.5 point}%
+\tgputstring<align=b>[x,y](3.5,2){16}
+\immediate\write\tg@epsfile{4.5 cm 1.7 cm 17 10 0.5 point}%
+\tgputstring<align=b>[x,y](4.5,2){17}
+\immediate\write\tg@epsfile{5.5 cm 1.7 cm 18 10 0.5 point}%
+\tgputstring<align=b>[x,y](5.5,2){18}
+\immediate\write\tg@epsfile{6.5 cm 1.7 cm 19 10 0.5 point}%
+\tgputstring<align=b>[x,y](6.5,2){19}
+\immediate\write\tg@epsfile{7.5 cm 1.7 cm 20 10 0.5 point}%
+\tgputstring<align=b>[x,y](7.5,2){20}
+\immediate\write\tg@epsfile{8.5 cm 1.7 cm 21 10 0.5 point}%
+\tgputstring<align=b>[x,y](8.5,2){21}
+\immediate\write\tg@epsfile{9.5 cm 1.7 cm 22 10 0.5 point}%
+\tgputstring<align=b>[x,y](9.5,2){22}
+\immediate\write\tg@epsfile{10.5 cm 1.7 cm 23 10 0.5 point}%
+\tgputstring<align=b>[x,y](10.5,2){23}
+\immediate\write\tg@epsfile{11.5 cm 1.7 cm 24 10 0.5 point}%
+\tgputstring<align=b>[x,y](11.5,2){24}
+\immediate\write\tg@epsfile{0.5 cm 0.2 cm 25 10 0.5 point}%
+\tgputstring<align=b>[x,y](0.5,0.5){25}
+\immediate\write\tg@epsfile{1.5 cm 0.2 cm 26 10 0.5 point}%
+\tgputstring<align=b>[x,y](1.5,0.5){26}
+\immediate\write\tg@epsfile{2.5 cm 0.2 cm 27 10 0.5 point}%
+\tgputstring<align=b>[x,y](2.5,0.5){27}
+\immediate\write\tg@epsfile{3.5 cm 0.2 cm 28 10 0.5 point}%
+\tgputstring<align=b>[x,y](3.5,0.5){28}
+\immediate\write\tg@epsfile{4.5 cm 0.2 cm 29 10 0.5 point}%
+\tgputstring<align=b>[x,y](4.5,0.5){29}
+\immediate\write\tg@epsfile{5.5 cm 0.2 cm 30 10 0.5 point}%
+\tgputstring<align=b>[x,y](5.5,0.5){30}
+\immediate\write\tg@epsfile{6.5 cm 0.2 cm 31 10 0.5 point}%
+\tgputstring<align=b>[x,y](6.5,0.5){31}
+\immediate\write\tg@epsfile{7.5 cm 0.2 cm 32 10 0.5 point}%
+\tgputstring<align=b>[x,y](7.5,0.5){32}
+\end{texgraph}
+\makeatother
+\caption{プロット点見本.}
+\label{fig:pointsample}
+\end{figure}
+
+
+
+\subsection{軸設定コマンド}
+軸の設定を行うコマンドには\texttt{\bs xaxis}, \texttt{\bs yaxis}, \texttt{\bs uaxis}, \texttt{\bs raxis}がある.
+
+軸設定コマンドはプロットコマンド, 枠描画コマンドに先んじて書かれなければならない.
+
+$x$軸の設定用\texttt{\bs xaxis}コマンドについて解説するが, $y$軸, $u$軸, $r$軸の設定についてはそれぞれ\texttt{\bs yaxis}, \texttt{\bs uaxis}, \texttt{\bs raxis}が対応する.
+書式, 設定内容は同じである.
+
+\begin{quote}
+\begin{tabular}{lll}
+書式 & \multicolumn{2}{l}{\texttt{\bs xaxis<\#1>(\#2,\#3)}} \\
+引数 & \#1 & keyval. \\
+ & \#2 & グラフ左(下)端の値. \\
+ & \#3 & グラフ右(上)端の値.
+\end{tabular}
+\end{quote}
+
+keyvalで設定する内容は以下の通りである.
+\begin{quote}
+\begin{tabular}{ll}
+increment & 主目盛増分. デフォルトは1. (線型プロットのみ有効. 対数では省略, 設定によらず10倍毎) \\
+division & 主目盛間の副目盛の数. (対数プロットでは1以上を指定すると9本の副目盛)\\
+plottype & linear (線型プロット) or log (対数プロット).\\
+format & 目盛数字の書式 (e: 指数, f: 小数, l: 指数のみ) \\
+presition & 目盛数字の仮数部小数点以下桁数. デフォルトは0.
+\end{tabular}
+\end{quote}
+
+
+\subsection{枠設定, 描画コマンド}
+枠の設定, 描画を行うコマンドには\texttt{\bs frame}がある.
+
+枠描画コマンドに先んじて軸設定コマンドが書かれていなければならない.
+
+\begin{quote}
+\begin{tabular}{lll}
+書式 & \multicolumn{2}{l}{\texttt{\bs frame\#1}} \\
+引数 & \#1 & keyval.
+\end{tabular}
+\end{quote}
+
+keyvalで設定する内容は以下の通りである.
+\begin{quote}
+\begin{tabular}{ll}
+frametype & \vtop{\hsize 35zw \strut 枠の種類 (frame: 枠とmeasurelengthで指定した長さの目盛線, section: 方眼). デフォルトはframe.}\\
+measurelength & \vtop{\hsize 35zw \strut frametypeにframeを設定した際の目盛線長さ (数字のみ, pt単位). デフォルトは3. sectionの時は省略可.} \\
+measurethickness & 主目盛線太さ (数字のみ, pt単位). デフォルトは0.4. \\
+submeasurethickness & 副目盛線太さ (数字のみ, pt単位). デフォルトは0.1. \\
+framethickness & 外枠の太さ (数字のみ, pt単位). デフォルトは1.
+\end{tabular}
+\end{quote}
+
+
+\subsection{軸タイトル描画コマンド}
+軸タイトルの描画を行うコマンドには\texttt{\bs xtitle}, \texttt{\bs ytitle}, \texttt{\bs utitle}, \texttt{\bs rtitle}がある.
+
+$x$軸タイトルの設定用\texttt{\bs xtitle}コマンドについて解説するが, $y$軸, $u$軸, $r$軸の設定についてはそれぞれ\texttt{\bs ytitle}, \texttt{\bs utitle}, \texttt{\bs rtitle}が対応する.
+書式, 設定内容は同じである.
+
+\begin{quote}
+\begin{tabular}{lll}
+書式 & \multicolumn{2}{l}{\texttt{\bs xtitle<\#1>\#2}} \\
+引数 & \#1 & keyval (省略可). \\
+ & \#2 & 軸タイトル文字列.
+\end{tabular}
+\end{quote}
+
+keyvalで設定する内容は以下の通りである.
+\begin{quote}
+\begin{tabular}{ll}
+xoffset & $x$方向変位 (単位付き数字). デフォルトはx, u軸0pt, y軸$-35$pt, r軸35pt. \\
+yoffset & $y$方向変位 (単位付き数字). デフォルトはy, r軸0pt, x軸$-25$pt, u軸25pt.
+\end{tabular}
+\end{quote}
+
+
+\subsection{凡例描画コマンド}
+凡例の描画を行うコマンドには\texttt{\bs legend}がある.
+
+凡例の描画を行うに先んじて\texttt{\bs plot}コマンドで全てのグラフをプロットしなければならない.
+また, \texttt{\bs frame}コマンドで枠を先に描画しなければならない.
+
+\begin{quote}
+\begin{tabular}{lll}
+書式 & \multicolumn{2}{l}{\texttt{\bs legend<\#1>(\#2,\#3)}} \\
+引数 & \#1 & keyval (省略可).\\
+ & \#2 & 凡例左上端の, グラフ左下端を基準とした$x$座標 (単位付き数字). \\
+ & \#3 & 凡例左上端の, グラフ左下端を基準とした$y$座標 (単位付き数字).
+\end{tabular}
+\end{quote}
+
+keyvalで設定する内容は以下の通りである.
+\begin{quote}
+\begin{tabular}{ll}
+parsep & 凡例間の縦方向間隔. デフォルトは14pt. \\
+plotlength & 凡例プロットの長さ. デフォルトは20pt. \\
+labelsep & 凡例プロットと凡例文字列の間隔. デフォルトは1em. \\
+hmargin & 凡例の下地となる白枠の横方向余白. デフォルトは5pt. \\
+vmargin & 凡例の下地となる白枠の縦方向余白. デフォルトは5pt. \\
+\end{tabular}
+\end{quote}
+
+
+\subsection{その他描画コマンド}
+前述のコマンドの他, グラフを修飾するために文字列, 直線, 矢印を描画するコマンドが存在する.
+
+文字列描画コマンド.
+\begin{quote}
+\begin{tabular}{lll}
+書式 & \multicolumn{2}{l}{\texttt{\bs tgputstring<\#1>[\#2,\#3](\#4,\#5){\#6}}} \\
+引数 & \#1 & keyval(省略可能). \\
+ & \#2 & 横参照軸($x$ or $u$). \\
+ & \#3 & 縦参照軸($y$ or $r$). \\
+ & \#4 & 文字列基準点$x$座標 (数字のみ, \#2の座標). \\
+ & \#5 & 文字列基準点$y$座標 (数字のみ, \#3の座標). \\
+ & \#6 & 文字列.
+\end{tabular}
+\end{quote}
+
+keyvalで設定する内容は以下の通りである.
+\begin{quote}
+\begin{tabular}{ll}
+align & 文字列を揃える方向. picture環境に準ず. r, l, t, b, cとその複合. デフォルトはc. \\
+margin & 文字列の背景となる白四角の文字列に対する余白(pt単位). デフォルトは2.\\
+\end{tabular}
+\end{quote}
+
+\vspace{\baselineskip}
+
+直線描画コマンド.
+\begin{quote}
+\begin{tabular}{lll}
+書式 & \multicolumn{2}{l}{\texttt{\bs tgline<\#1>[\#2,\#3](\#4,\#5)(\#6,\#7)}} \\
+引数 & \#1 & keyval(省略可能).\\
+ & \#2 & 横参照軸($x$ or $u$). \\
+ & \#3 & 縦参照軸($y$ or $r$). \\
+ & (\#4,\#5) & 始点座標 (指定した参照軸による座標数字). \\
+ & (\#6,\#7) & 終点座標 (指定した参照軸による座標数字).
+\end{tabular}
+\end{quote}
+
+keyvalで設定する内容は以下の通りである.
+\begin{quote}
+\begin{tabular}{ll}
+dash & postscript書式の破線. 省略可能であり, 省略時は実線. \\
+linethickness & 線の太さ (数字のみ, pt単位). デフォルトは1.
+\end{tabular}
+\end{quote}
+
+\vspace{\baselineskip}
+
+矢印描画コマンド.
+\begin{quote}
+\begin{tabular}{lll}
+書式 & \multicolumn{2}{l}{\texttt{\bs tgline<\#1>[\#2,\#3](\#4,\#5)(\#6,\#7)}} \\
+引数 & \#1 & keyval(省略可能). \\
+ & \#2 & 横参照軸($x$ or $u$). \\
+ & \#3 & 縦参照軸($y$ or $r$). \\
+ & (\#4,\#5) & 始点座標 (指定した参照軸による座標数字). \\
+ & (\#6,\#7) & 終点座標 (指定した参照軸による座標数字).
+\end{tabular}
+\end{quote}
+
+keyvalで設定する内容は以下の通りである.
+\begin{quote}
+\begin{tabular}{ll}
+dash & postscript書式の破線. 省略可能であり, 省略時は実線. \\
+linethickness & 線の太さ (数字のみ, pt単位). デフォルトは1. \\
+length & 鏃の長さ (数字のみ, pt単位). デフォルトは14. \\
+angle & 鏃の中心からの開き角度($^\circ$単位). デフォルトは15. \\
+type & 鏃のつき方 (0: なし, 1: 終点のみ, 2: 始点のみ, 3: 両方). デフォルトは2.
+\end{tabular}
+\end{quote}
+
+
+\Section{使用例}
+本パッケージの使用例を以下に示す.
+組版結果を\figref{fig:graph}に示す.
+\begin{verbatim}
+\begin{texgraph}<leftmargin=45pt,rightmargin=45pt,bottommargin=35pt>(9cm,9cm)
+\xaxis<division=1,plottype=log,format=l>(100,1e6)
+\yaxis<increment=20,division=4,plottype=linear,format=f,presition=0>(-80,20)
+\raxis<increment=45,division=3,plottype=linear,format=f,presition=0>(-190,10)
+\frame{frametype=frame,measurelength=8,measurethickness=0.5,submeasurethickness=0.1,%
+    framethickness=1}
+\plot<pointtype=7,pointsize=8,linetype=1,linethickness=0.5>%
+    {Butterworth.txt}[x:1][y:2]{\footnotesize Butterworth--Gain}
+\plot<pointtype=8,pointsize=8,linetype=[2 2] 1,linethickness=0.5>%
+    {Butterworth.txt}[x:1][r:3]{\footnotesize Butterworth--Phase}
+\plot<pointtype=1,pointsize=6,linetype=1,linethickness=0.5>%
+    {Bessel.txt}[x:1][y:2]{\footnotesize Bessel--Gain}
+\plot<pointtype=2,pointsize=6,linetype=[2 2] 1,linethickness=0.5>%
+    {Bessel.txt}[x:1][r:3]{\footnotesize Bessel--Phase}
+\xtitle{$f$ [Hz]}
+\ytitle{$|G(f)|$ [dB]}
+\rtitle{$\arg G(f)$ $[^\circ]$}
+\tgarrow[x,y](100,-3)(10000,-3)
+\tgline<dash=[5 5] 0>[x,y](10000,-80)(10000,-3)
+\tgputstring<align=r,margin=0>[x,y](83,-4){$-3$}
+\legend<labelsep=0.5em,parsep=12pt,hmargin=0.5mm,vmargin=0.5mm>(43mm,78mm)
+\end{texgraph}
+\end{verbatim}
+
+\begin{figure}[b]
+\centering
+\begin{texgraph}<leftmargin=45pt,rightmargin=45pt,bottommargin=35pt>(8cm,8cm)
+\xaxis<division=1,plottype=log,format=l>(100,1e6)
+\yaxis<increment=20,division=4,plottype=linear,format=f,presition=0>(-80,20)
+\raxis<increment=45,division=3,plottype=linear,format=f,presition=0>(-190,10)
+\frame{frametype=frame,measurelength=8,measurethickness=0.5,submeasurethickness=0.1,%
+    framethickness=1}
+\plot<pointtype=7,pointsize=8,linetype=1,linethickness=0.5>%
+    {Butterworth.txt}[x:1][y:2]{\footnotesize Butterworth--Gain}
+\plot<pointtype=8,pointsize=8,linetype=[2 2] 1,linethickness=0.5>%
+    {Butterworth.txt}[x:1][r:3]{\footnotesize Butterworth--Phase}
+\plot<pointtype=1,pointsize=6,linetype=1,linethickness=0.5>%
+    {Bessel.txt}[x:1][y:2]{\footnotesize Bessel--Gain}
+\plot<pointtype=2,pointsize=6,linetype=[2 2] 1,linethickness=0.5>%
+    {Bessel.txt}[x:1][r:3]{\footnotesize Bessel--Phase}
+\xtitle{$f$ [Hz]}
+\ytitle{$|G(f)|$ [dB]}
+\rtitle{$\arg G(f)$ $[^\circ]$}
+\tgarrow[x,y](100,-3)(10000,-3)
+\tgline<dash=[5 5] 0>[x,y](10000,-80)(10000,-3)
+\tgputstring<align=r,margin=0>[x,y](83,-4){$-3$}
+\legend<labelsep=0.5em,parsep=12pt,hmargin=0.5mm,vmargin=0.5mm>(43mm,78mm)
+\end{texgraph}
+\caption{\texttt{texgraph.sty}を用いたグラフ描画の例.}
+\label{fig:graph}
+\end{figure}
+
+\end{document}
+
