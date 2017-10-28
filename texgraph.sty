@@ -52,11 +52,15 @@
 % python出力ファイルの拡張子をtxtからtmpに変更
 % first release
 %
+% 2017/10/28 ver.1.1.0
+% linuxでしか動作確認してなかったので窓でも動くように
+% plotのx, y軸変換がない時pythonを呼ばない（高速化のため）
+%
 \NeedsTeXFormat{LaTeX2e}%
-\ProvidesPackage{texgraph}[2016/10/05 ver.1.0.1 threegirls89]%
+\ProvidesPackage{texgraph}[2017/10/28 ver.1.1.0 threegirls89]%
 \def\j@urnalname{texgraph}
-\def\versi@ndate{Oct. 05, 2016}
-\def\versi@nno{ver 1.0.1}
+\def\versi@ndate{Oct. 28, 2017}
+\def\versi@nno{ver 1.1.0}
 \def\copyrighth@lder{threegirls89}
 \typeout{Option Style `\j@urnalname' (\versi@nno) <\versi@ndate>\space [\copyrighth@lder]}
 \typeout{Macros to plot graphs of external data files.}
@@ -113,15 +117,24 @@
 \def\tg@pycalc#1#2{%
 	\immediate\openout\tg@pyout=\jobname-tg.py%
 	\immediate\write\tg@pyout{import math}%
-	\immediate\write\tg@pyout{fout = open("\jobname-tg.tmp", "w")}%
-	\immediate\write\tg@pyout{fout.write(str(#1))}%
-	\immediate\write\tg@pyout{fout.close()}%
-	\immediate\write\tg@pyout{exit()}%
+	\immediate\write\tg@pyout{print(#1)}%
 	\immediate\closeout\tg@pyout%
-	\immediate\write18{python \jobname-tg.py}%
+	\immediate\write18{python \jobname-tg.py > \jobname-tg.tmp}%
 	\immediate\openin\tg@pyin=\jobname-tg.tmp%
 	\immediate\read\tg@pyin to \tg@tmp%
 	\edef#2{\tg@rmspace\tg@tmp}
+	\immediate\closein\tg@pyin%
+}
+\def\tg@pytwocalc#1#2#3#4{%
+	\immediate\openout\tg@pyout=\jobname-tg.py%
+	\immediate\write\tg@pyout{import math}%
+	\immediate\write\tg@pyout{print("{" + str(#1) + "}{" + str(#3) + "}")}%
+	\immediate\closeout\tg@pyout%
+	\immediate\write18{python \jobname-tg.py > \jobname-tg.tmp}%
+	\immediate\openin\tg@pyin=\jobname-tg.tmp%
+	\immediate\read\tg@pyin to \tg@tmp%
+	\expandafter\edef\expandafter#2\expandafter{\expandafter\@firstoftwo\tg@tmp}
+	\expandafter\edef\expandafter#4\expandafter{\expandafter\@secondoftwo\tg@tmp}
 	\immediate\closein\tg@pyin%
 }
 \def\tg@expformat#1#2#3{%
@@ -133,22 +146,19 @@
 \def\tg@pyformat#1#2#3#4{%
 	\immediate\openout\tg@pyout=\jobname-tg.py%
 	\immediate\write\tg@pyout{import math}%
-	\immediate\write\tg@pyout{fout = open("\jobname-tg.tmp", "w")}%
 	\if#3f% 小数表示
 		\immediate\write\tg@pyout{num = 0.0 if abs(#1) < 10 ** (-#4) else #1}%
-		\immediate\write\tg@pyout{fout.write(format(num,'.#4f'))}%
+		\immediate\write\tg@pyout{print(format(num,'.#4f'))}%
 	\else% 指数表示
 		\immediate\write\tg@pyout{tempstra = format(#1,'.#4e')}%
 		\if#3e%
-			\immediate\write\tg@pyout{fout.write('{' + tempstra[: tempstra.find('e')] + '}{' + str(int(tempstra[tempstra.find('e') + 1 :])) + '}')}%
+			\immediate\write\tg@pyout{print('{' + tempstra[: tempstra.find('e')] + '}{' + str(int(tempstra[tempstra.find('e') + 1 :])) + '}')}%
 		\else
-			\immediate\write\tg@pyout{fout.write('{}{' + str(int(tempstra[tempstra.find('e') + 1 :])) + '}')}%
+			\immediate\write\tg@pyout{print('{}{' + str(int(tempstra[tempstra.find('e') + 1 :])) + '}')}%
 		\fi
 	\fi
-	\immediate\write\tg@pyout{fout.close()}%
-	\immediate\write\tg@pyout{exit()}%
 	\immediate\closeout\tg@pyout%
-	\immediate\write18{python \jobname-tg.py}%
+	\immediate\write18{python \jobname-tg.py > \jobname-tg.tmp}%
 	\immediate\openin\tg@pyin=\jobname-tg.tmp%
 	\immediate\read\tg@pyin to \tg@tmp%
 	\if#3f% 小数表示
@@ -164,13 +174,10 @@
 \def\tg@pyeval#1#2#3#4{%
 	\immediate\openout\tg@pyout=\jobname-tg.py%
 	\immediate\write\tg@pyout{import math}%
-	\immediate\write\tg@pyout{fout = open("\jobname-tg.tmp", "w")}%
 	\immediate\write\tg@pyout{#3 = #1}%
-	\immediate\write\tg@pyout{fout.write(str(eval("#4")))}%
-	\immediate\write\tg@pyout{fout.close()}%
-	\immediate\write\tg@pyout{exit()}%
+	\immediate\write\tg@pyout{print(eval("#4"))}%
 	\immediate\closeout\tg@pyout%
-	\immediate\write18{python \jobname-tg.py}%
+	\immediate\write18{python \jobname-tg.py > \jobname-tg.tmp}%
 	\immediate\openin\tg@pyin=\jobname-tg.tmp%
 	\immediate\read\tg@pyin to \tg@tmp%
 	\edef#2{\tg@rmspace\tg@tmp}
@@ -180,21 +187,20 @@
 % shell-escapeが有効かtest
 \def\tg@pyinputstr{a }
 \def\tg@pytest{%
-	\immediate\openout\tg@pyout=tgpytest.tmp%
+	\immediate\openout\tg@pyout=\jobname-tg.tmp%
+	\immediate\write\tg@pyout{ }%
 	\immediate\closeout\tg@pyout%
-	\immediate\openout\tg@pyout=tgpytest.py%
-	\immediate\write\tg@pyout{fout = open("tgpytest.tmp", "w")}%
+	\immediate\openout\tg@pyout=\jobname-tg.py%
+	\immediate\write\tg@pyout{fout = open("\jobname-tg.tmp", "w")}%
 	\immediate\write\tg@pyout{fout.write('a')}%
 	\immediate\write\tg@pyout{fout.close()}%
-	\immediate\write\tg@pyout{exit()}%
 	\immediate\closeout\tg@pyout%
-	\immediate\write18{python tgpytest.py}%
-	\immediate\openin\tg@pyin=tgpytest.tmp%
+	\immediate\write18{python \jobname-tg.py}%
+	\immediate\openin\tg@pyin=\jobname-tg.tmp%
 	\immediate\read\tg@pyin to \tg@tmp%
 	\immediate\closein\tg@pyin%
 	\def\tg@next{\relax}%
 	\ifx\tg@tmp\tg@pyinputstr
-		\immediate\write18{rm tgpytest*}%
 	\else
 		\typeout{  Fatal: Enable --shell-escape. Process stopped.}%
 		\def\tg@next{\stop}%
@@ -245,13 +251,21 @@
 				\if=\tg@ret@split
 					\edef\tg@tmpx{(\tg@ret@split)}
 				\else
-					\tg@pyeval\tg@ret@split\tg@tmpx{x}#4
+					\if#4x
+						\edef\tg@tmpx{\tg@ret@split}
+					\else
+						\tg@pyeval\tg@ret@split\tg@tmpx{x}#4
+					\fi
 				\fi
 				\tg@extractstr\tg@onerow[#3]% 第#3列抽出
 				\if=\tg@ret@split
 					\edef\tg@tmpy{(\tg@ret@split)}
 				\else
-					\tg@pyeval\tg@ret@split\tg@tmpy{y}#5
+					\if#4y
+						\edef\tg@tmpx{\tg@ret@split}
+					\else
+						\tg@pyeval\tg@ret@split\tg@tmpy{y}#5
+					\fi
 				\fi
 				\immediate\write\tg@epsfile{\tg@tmpx\space\tg@tmpy\space plot}%
 			\fi
@@ -424,8 +438,9 @@
 	\immediate\write\tg@epsfile{0 \tg@xincrement\space \tg@xdivision\space cst\tg@frametype\space measure}%
 	\ifx\tg@xtype\tg@strlinear
 		% x軸数字
-		\tg@pycalc{math.ceil(float(\tg@xmin) / \tg@xincrement) * \tg@xincrement}{\tg@xmeasuremin}%
-		\tg@pycalc{math.floor(float(\tg@xmax) / \tg@xincrement) * \tg@xincrement}{\tg@xmeasuremax}%
+		\tg@pytwocalc{math.ceil(float(\tg@xmin) / \tg@xincrement) * \tg@xincrement}{\tg@xmeasuremin}{math.floor(float(\tg@xmax) / \tg@xincrement) * \tg@xincrement}{\tg@xmeasuremax}%
+%		\tg@pycalc{math.ceil(float(\tg@xmin) / \tg@xincrement) * \tg@xincrement}{\tg@xmeasuremin}%
+%		\tg@pycalc{math.floor(float(\tg@xmax) / \tg@xincrement) * \tg@xincrement}{\tg@xmeasuremax}%
 		\edef\tg@tmpcnt{\tg@xmeasuremin}
 		\loop
 			\tg@pycalc{float(\rmpt\tg@width) * ((\tg@tmpcnt) - (\tg@xmin)) / ((\tg@xmax) - (\tg@xmin))}{\tg@pictx}%
@@ -435,8 +450,10 @@
 			\tg@pycalc{'t' if (\tg@tmpcnt <= \tg@xmeasuremax) else 'f'}{\tg@tmpbool}%
 			\if t\tg@tmpbool \repeat
 	\else
-		\tg@pycalc{10 ** math.ceil(math.log10(\tg@xmin))}{\tg@xmeasuremin}%
-		\tg@pycalc{10 ** math.floor(math.log10(\tg@xmax))}{\tg@xmeasuremax}%
+		\tg@pytwocalc{10 ** math.ceil(math.log10(\tg@xmin))}{\tg@xmeasuremin}{10 ** math.floor(math.log10(\tg@xmax))}{\tg@xmeasuremax}%
+%		\tg@pycalc{10 ** math.ceil(math.log10(\tg@xmin))}{\tg@xmeasuremin}%
+%		\tg@pycalc{10 ** math.floor(math.log10(\tg@xmax))}{\tg@xmeasuremax}%
+		\immediate\write\tg@epsfile{\@percent\@percent\@percent\@percent\@percent\@percent\@percent\@percent\@percent\@percent \tg@xmeasuremin \tg@xmeasuremax}%
 		\edef\tg@tmpcnt{\tg@xmeasuremin}
 		\loop
 			\tg@pycalc{float(\rmpt\tg@width) * math.log10(float(\tg@tmpcnt) / \tg@xmin) / math.log10(\tg@xmax / \tg@xmin)}{\tg@pictx}%
@@ -683,7 +700,7 @@
 	\edef\tg@legrectw{\rmpt\@tempdima}
 %
 	\@tempcnta=\tg@cnt@legend
-	\typeout{\the\tg@cnt@legend}
+%	\typeout{\the\tg@cnt@legend}
 	\advance \@tempcnta -1
 	\@tempdima=\tg@legparsep
 	\multiply\@tempdima\the\@tempcnta
