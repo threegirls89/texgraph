@@ -261,8 +261,8 @@
 				\if=\tg@ret@split
 					\edef\tg@tmpy{(\tg@ret@split)}
 				\else
-					\if#4y
-						\edef\tg@tmpx{\tg@ret@split}
+					\if#5y
+						\edef\tg@tmpy{\tg@ret@split}
 					\else
 						\tg@pyeval\tg@ret@split\tg@tmpy{y}#5
 					\fi
@@ -289,6 +289,7 @@
 \define@key{tg@tgplot}{linethickness}{\edef\tg@linewidth{#1}}% 線の太さ[pt]
 \define@key{tg@tgplot}{xconvert}{\edef\tg@xconvert{#1}}% 横軸値変換
 \define@key{tg@tgplot}{yconvert}{\edef\tg@yconvert{#1}}% 縦軸値変換
+\define@key{tg@tgplot}{color}{\edef\tg@plotcolor{#1}}% プロット色
 %
 \def\plot{%
 \@ifnextchar<{\@plot}{\@plot<>}%
@@ -300,11 +301,13 @@
 	\def\tg@linewidth{1}
 	\def\tg@xconvert{x}
 	\def\tg@yconvert{y}
+	\def\tg@plotcolor{0 0 0}
 	\setkeys{tg@tgplot}{#1}
 	\immediate\write\tg@epsfile{/first 1 def}%
 	\immediate\write\tg@epsfile{/xaxis (#3) xyur2num def}%
 	\immediate\write\tg@epsfile{/yaxis (#5) xyur2num def}%
 	\immediate\write\tg@epsfile{gsave}%
+	\immediate\write\tg@epsfile{\tg@plotcolor\space 255 div 3 1 roll 255 div 3 1 roll 255 div 3 1 roll setrgbcolor}%
 	\immediate\write\tg@epsfile{\tg@linewidth \space setlinewidth}%
 	\def\tg@emptycheck{#7}
 	\ifx\tg@emptycheck\empty\else
@@ -312,7 +315,7 @@
 		\expandafter\setbox\csname tg@box\the\tg@cnt@legend\endcsname=\hbox{\tg@legendfont #7}
 		\@tempdima=\expandafter\wd\csname tg@box\the\tg@cnt@legend\endcsname
 		\ifdim\@tempdima>\tg@legtextwidth \tg@legtextwidth=\@tempdima\fi
-		\tg@makelegend{\csname tg@box\the\tg@cnt@legend\endcsname}\tg@pointtype\tg@pointsize\tg@linetype\tg@linewidth
+		\tg@makelegend{\csname tg@box\the\tg@cnt@legend\endcsname}\tg@pointtype\tg@pointsize\tg@linetype\tg@linewidth\tg@plotcolor
 		\advance \tg@cnt@legend 1
 	\fi
 	\ifx\tg@linetype\tg@strnolines
@@ -327,7 +330,7 @@
 	\tg@extracttwocolumn#2[#4][#6]\tg@xconvert\tg@yconvert
 	\immediate\write\tg@epsfile{stroke}%
 	\immediate\write\tg@epsfile{grestore}%
-	\immediate\write\tg@epsfile{\tg@pointtype \space \tg@pointsize\space \tg@linewidth\space points}%
+	\immediate\write\tg@epsfile{\tg@pointtype \space \tg@pointsize\space \tg@linewidth\space\tg@plotcolor\space points}%
 }
 %
 % x軸の設定
@@ -422,6 +425,8 @@
 \define@key{tg@frame}{framethickness}{\edef\tg@framethick{#1}}% 枠線幅
 \define@key{tg@frame}{frametype}{\edef\tg@frametype{#1}}% 枠種類 section or frame
 \define@key{tg@frame}{measurefont}{\def\tg@measurefont{#1}}% 目盛文字フォント 目盛文字は数式環境内のため単純な実装ではitalicなどにできない
+\define@key{tg@frame}{measurecolor}{\def\tg@measurecolor{#1}}% 目盛線色 postscriptの形式R G Bで入力(但し0-255の整数)
+\define@key{tg@frame}{framecolor}{\def\tg@measurecolor{#1}}% 目盛線色 postscriptの形式R G Bで入力(但し0-255の整数)
 \def\frame#1{%
 	\def\tg@measurelen{3}
 	\def\tg@measurethick{0.4}
@@ -429,10 +434,14 @@
 	\def\tg@framethick{1}
 	\def\tg@frametype{frame}
 	\def\tg@measurefont{\normalsize\rmfamily}
+	\def\tg@measurecolor{0 0 0}
+	\def\tg@framecolor{0 0 0}
 	\setkeys{tg@frame}{#1}
-	\immediate\write\tg@epsfile{/measurelen \tg@measurelen\space def}%
+	\immediate\write\tg@epsfile{/measurelen \tg@measurelen\space def}
 	\immediate\write\tg@epsfile{/measurethick \tg@measurethick\space def}%
 	\immediate\write\tg@epsfile{/submeasurethick \tg@submeasurethick\space def}%
+	\immediate\write\tg@epsfile{gsave}%
+	\immediate\write\tg@epsfile{\tg@measurecolor\space 255 div 3 1 roll 255 div 3 1 roll 255 div 3 1 roll setrgbcolor}
 %x軸
 	% epsにx目盛書き出し
 	\immediate\write\tg@epsfile{0 \tg@xincrement\space \tg@xdivision\space cst\tg@frametype\space measure}%
@@ -535,7 +544,10 @@
 			\fi
 		\fi
 	\fi
+	\immediate\write\tg@epsfile{grestore gsave}%
+	\immediate\write\tg@epsfile{\tg@framecolor\space 255 div 3 1 roll 255 div 3 1 roll 255 div 3 1 roll setrgbcolor}
 	\immediate\write\tg@epsfile{\tg@framethick\space frame}%
+	\immediate\write\tg@epsfile{grestore}%
 }
 %
 % 軸タイトル
@@ -604,9 +616,9 @@
 }
 %
 % 凡例の記録
-% #1 凡例文字列, #2 点種, #3 点サイズ, #4 線種, #5 線サイズ 引数の意味は\tgplotと同じ
+% #1 凡例文字列, #2 点種, #3 点サイズ, #4 線種, #5 線サイズ #6 色 引数の意味は\tgplotと同じ
 \newdimen\tg@dim@legtexty
-\def\tg@makelegend#1#2#3#4#5{%
+\def\tg@makelegend#1#2#3#4#5#6{%
 	\expandafter\edef\csname tg@legendtext\the\tg@cnt@legend\endcsname##1##2##3{% 凡例文字を置くコマンド ##1: textのx ##2: y ##3: 凡例間間隔縦方向
 		\tg@dim@legtexty=##2
 		\@tempdima=##3
@@ -620,6 +632,7 @@
 		\advance \@tempdima -\the\tg@cnt@legend\@tempdimb
 		\@tempdimb=##4
 		\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{gsave}
+		\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{#6 255 div 3 1 roll 255 div 3 1 roll 255 div 3 1 roll setrgbcolor}
 		\ifx#4\tg@strnolines
 			\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{/linedraw 0 def}
 		\else
@@ -629,8 +642,6 @@
 			\fi
 		\fi
 		\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{\noexpand\rmpt\@tempdimc \space \noexpand\rmpt\@tempdima \space \noexpand\rmpt\@tempdimb\space #5\space legendline}
-		\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{grestore}
-		\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{gsave}
 		\ifnum#2>0 \noexpand\immediate\noexpand\write\noexpand\tg@epsfile{\noexpand\rmpt\@tempdimc \space \noexpand\rmpt\@tempdimb\space 0.5 mul add \space \noexpand\rmpt\@tempdima \space #2\space #3\space #5\space point} \fi
 		\noexpand\immediate\noexpand\write\noexpand\tg@epsfile{grestore}%
 	}%

@@ -381,7 +381,10 @@
 	grestore
 } def
 
+% /pointtype /pointsize /linewidth /colorR /colorG /colorB(0-255)
 /points{
+	gsave
+	255 div 3 1 roll 255 div 3 1 roll 255 div 3 1 roll setrgbcolor
 	3 dict begin
 	/linewidth exch def
 	/pointsize exch def
@@ -395,6 +398,7 @@
 		pop
 	} ifelse
 	end
+	grestore
 } def
 
 /makeul{
