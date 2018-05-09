@@ -428,7 +428,7 @@
 \define@key{tg@frame}{frametype}{\edef\tg@frametype{#1}}% 枠種類 section or frame
 \define@key{tg@frame}{measurefont}{\def\tg@measurefont{#1}}% 目盛文字フォント 目盛文字は数式環境内のため単純な実装ではitalicなどにできない
 \define@key{tg@frame}{measurecolor}{\def\tg@measurecolor{#1}}% 目盛線色 postscriptの形式R G Bで入力(但し0-255の整数)
-\define@key{tg@frame}{framecolor}{\def\tg@measurecolor{#1}}% 目盛線色 postscriptの形式R G Bで入力(但し0-255の整数)
+\define@key{tg@frame}{framecolor}{\def\tg@framecolor{#1}}% 枠色 postscriptの形式R G Bで入力(但し0-255の整数)
 \def\frame#1{%
 	\def\tg@measurelen{3}
 	\def\tg@measurethick{0.4}
