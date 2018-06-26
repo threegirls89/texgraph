@@ -59,10 +59,10 @@
 % ver.1.1.0以降の変更はgitで管理するので，こちらのlogはここまで
 %
 \NeedsTeXFormat{LaTeX2e}%
-\ProvidesPackage{texgraph}[2017/10/28 ver.1.1.0 threegirls89]%
+\ProvidesPackage{texgraph}[2018/05/09 ver.1.1.1 threegirls89]%
 \def\j@urnalname{texgraph}
-\def\versi@ndate{Oct. 28, 2017}
-\def\versi@nno{ver 1.1.0}
+\def\versi@ndate{May. 09, 2018}
+\def\versi@nno{ver 1.1.1}
 \def\copyrighth@lder{threegirls89}
 \typeout{Option Style `\j@urnalname' (\versi@nno) <\versi@ndate>\space [\copyrighth@lder]}
 \typeout{Macros to plot graphs of external data files.}
@@ -599,14 +599,6 @@
 	\put(\rmpt\tg@dim@titlexoffset,\rmpt\tg@dim@titleyoffset){\makebox(0,0)[c]{\rotatebox{90}{#2}}}%
 }
 %
-% 枠線, 目盛, サブ目盛, プロット線の太さ指定
-\def\plotlinethickness#1{%
-	\def\tg@linewidth{#1}%
-}
-\def\pointsize#1{%
-\def\tg@pointsize{#1}%
-}
-%
 % 凡例の描画
 %
 % 凡例文字フォント指定 フォント(特にサイズ)指定は\plotの前に行う
@@ -884,7 +876,6 @@
 %
 % texgraph環境
 % #1, #2: width, height of the plot area.
-% #3, #4: (temporarily) left, bottom margin
 %
 \define@key{tg@texgraph}{leftmargin}{\tg@leftmargin=#1}%
 \define@key{tg@texgraph}{bottommargin}{\tg@bottommargin=#1}%
