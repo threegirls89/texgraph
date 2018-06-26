@@ -605,9 +605,6 @@
 \def\tg@legendfont{\normalsize\rmfamily}
 \def\legendfont#1{\def\tg@legendfont{#1}}
 %
-\def\legendplotlength#1{%
-	\def\tg@legplotlength{#1}%
-}
 %
 % 凡例の記録
 % #1 凡例文字列, #2 点種, #3 点サイズ, #4 線種, #5 線サイズ #6 色 引数の意味は\tgplotと同じ
@@ -923,7 +920,6 @@
 	%
 	% 変数の初期化
 	\def\tg@pointsize{5}
-	\def\tg@legplotlength{50}
 	\def\tg@linewidth{0.5}
 	\def\tg@postincludegraphics{\relax}
 	\tg@legtextwidth=\z@
