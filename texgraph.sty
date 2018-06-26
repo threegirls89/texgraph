@@ -59,10 +59,10 @@
 % ver.1.1.0以降の変更はgitで管理するので，こちらのlogはここまで
 %
 \NeedsTeXFormat{LaTeX2e}%
-\ProvidesPackage{texgraph}[2018/05/09 ver.1.1.1 threegirls89]%
+\ProvidesPackage{texgraph}[2018/06/27 ver.1.1.2 threegirls89]%
 \def\j@urnalname{texgraph}
-\def\versi@ndate{May. 09, 2018}
-\def\versi@nno{ver 1.1.1}
+\def\versi@ndate{Jun. 27, 2018}
+\def\versi@nno{ver 1.1.2}
 \def\copyrighth@lder{threegirls89}
 \typeout{Option Style `\j@urnalname' (\versi@nno) <\versi@ndate>\space [\copyrighth@lder]}
 \typeout{Macros to plot graphs of external data files.}
@@ -727,6 +727,7 @@
 %
 \define@key{tg@line}{dash}{\edef\tg@linedash{#1}}% 破線, psの書式
 \define@key{tg@line}{linethickness}{\edef\tg@linewidth{#1}}% 線の太さ[pt]
+\define@key{tg@line}{color}{\edef\tg@linecolor{#1}}% 線色
 %
 % [横参照軸,縦参照軸](始点)(終点)
 %
@@ -736,8 +737,10 @@
 \def\tg@line<#1>[#2,#3](#4,#5)(#6,#7){%
 	\let\tg@linedash\relax
 	\edef\tg@linewidth{1}
+	\edef\tg@linecolor{0 0 0}
 	\setkeys{tg@line}{#1}
 	\immediate\write\tg@epsfile{gsave}%
+	\immediate\write\tg@epsfile{\tg@linecolor\space 255 div 3 1 roll 255 div 3 1 roll 255 div 3 1 roll setrgbcolor}
 	\ifx\tg@linedash\relax\else\immediate\write\tg@epsfile{\tg@linedash\space setdash}\fi%
 	\immediate\write\tg@epsfile{\tg@linewidth\space setlinewidth}%
 	\immediate\write\tg@epsfile{newpath}%
@@ -754,17 +757,20 @@
 \define@key{tg@arrow}{length}{\edef\tg@arrowlen{#1}}% 鏃の長さ[pt]
 \define@key{tg@arrow}{angle}{\edef\tg@arrowangle{#1}}% 鏃の開き角度[^\circ]
 \define@key{tg@arrow}{type}{\edef\tg@arrowtype{#1}}% 鏃のつき方(0: なし, 1: 終点のみ, 2: 始点のみ, 3: 両方)
+\define@key{tg@arrow}{color}{\edef\tg@linecolor{#1}}% 線色
 \def\tgarrow{%
 	\@ifnextchar<{\tg@arrow}{\tg@arrow<>}%
 }
 \def\tg@arrow<#1>[#2,#3](#4,#5)(#6,#7){%
 	\let\tg@linedash\relax
 	\edef\tg@linewidth{1}
+	\edef\tg@linecolor{0 0 0}
 	\edef\tg@arrowangle{15}
 	\edef\tg@arrowlen{7}
 	\edef\tg@arrowtype{1}
 	\setkeys{tg@arrow}{#1}
 	\immediate\write\tg@epsfile{gsave}%
+	\immediate\write\tg@epsfile{\tg@linecolor\space 255 div 3 1 roll 255 div 3 1 roll 255 div 3 1 roll setrgbcolor}
 	\ifx\tg@linedash\relax\else\immediate\write\tg@epsfile{\tg@linedash\space setdash}\fi%
 	\immediate\write\tg@epsfile{\tg@linewidth\space setlinewidth}%
 	\immediate\write\tg@epsfile{#4 (#2) xyur2num coord #5 (#3) xyur2num coord #6 (#2) xyur2num coord #7 (#3) xyur2num coord \tg@arrowangle\space \tg@arrowlen\space \tg@arrowtype\space arrow}%
