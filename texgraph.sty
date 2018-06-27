@@ -338,7 +338,6 @@
 % x軸の設定
 % #1: keyval
 % #2, #3: 範囲 #2: 左端の値, #3: 右端の値.
-%
 % xaxis用keyval
 \define@key{tg@xaxis}{increment}{\edef\tg@xincrement{#1}}% 大目盛増分
 \define@key{tg@xaxis}{division}{\edef\tg@xdivision{#1}}% 大目盛間小目盛分割数
@@ -412,7 +411,6 @@
 	\edef\tg@rmax{#3}
 	\immediate\write\tg@epsfile{3 \tg@rmin\space \tg@rmax\space cst\tg@rtype\space setaxis}%
 }
-%
 %
 % 枠の描画
 % #1: keyval
@@ -600,11 +598,9 @@
 }
 %
 % 凡例の描画
-%
 % 凡例文字フォント指定 フォント(特にサイズ)指定は\plotの前に行う
 \def\tg@legendfont{\normalsize\rmfamily}
 \def\legendfont#1{\def\tg@legendfont{#1}}
-%
 %
 % 凡例の記録
 % #1 凡例文字列, #2 点種, #3 点サイズ, #4 線種, #5 線サイズ #6 色 引数の意味は\tgplotと同じ
@@ -773,10 +769,8 @@
 	\immediate\write\tg@epsfile{#4 (#2) xyur2num coord #5 (#3) xyur2num coord #6 (#2) xyur2num coord #7 (#3) xyur2num coord \tg@arrowangle\space \tg@arrowlen\space \tg@arrowtype\space arrow}%
 	\immediate\write\tg@epsfile{grestore}%
 }
-%
 % その他の文字列 引数は\tgputstring<#1>[#2,#3](#4,#5)#6
 % #1: keyval, #2,#3: 参照軸, #4,#5 文字列中心座標, #6: 文字列
-%
 \def\tgputstring{%
 	\futurelet\tg@nextchar\tg@putstring%
 }
@@ -824,10 +818,8 @@
 			\tg@pycalc{float(\rmpt\tg@height) * math.log10(float(#5) / (\tg@ymin)) / math.log10((\tg@ymax) / (\tg@ymin))}{\tg@stry}%
 		\fi
 	\fi
-%
 	\expandafter\edef\csname tg@putstr\the\tg@cnt@str\endcsname{%
 		\noexpand\put(\tg@strx,\tg@stry){\noexpand\makebox(0,0)[\tg@textalign]{\noexpand\box\csname tg@strbox\the\tg@cnt@str\endcsname}}}%
-%
 % 文字列の下地となる白四角枠
 	\@tempdima=-0.5\wd\csname tg@strbox\the\tg@cnt@str\endcsname
 	\@tempdimb=0.5\ht\csname tg@strbox\the\tg@cnt@str\endcsname
@@ -864,7 +856,6 @@
 \immediate\write\tg@epsfile{\tg@strx\space \tg@stry\space \rmpt\@tempdima\space \rmpt\@tempdimb\space whiterect}%
 	\advance \tg@cnt@str 1%
 }
-%
 % 文字列の箱を置く. includegraphicsの後に行う(そうしないと文字列がグラフの下になる)
 \def\tg@putstr{%
 	\advance \tg@cnt@str -1%
@@ -873,7 +864,6 @@
 	\advance \tg@cnt@str -1
 	\ifnum\tg@cnt@str>-1 \repeat%
 }
-%
 %
 \def\tg@ul@ps{0.996264}
 %
@@ -909,8 +899,9 @@
 	\immediate\write\tg@epsfile{\@percent !PS-Adobe-3.0 EPSF-3.0}%
 	\immediate\write\tg@epsfile{\@percent\@percent BoundingBox: 0 0 \rmptint\tg@pswidth\space \rmptint\tg@psheight}%
 	\immediate\write\tg@epsfile{\@percent\@percent HiResBoundingBox: 0 0 \rmpt\tg@pswidth\space \rmpt\tg@psheight}%
-	\immediate\write\tg@epsfile{\tg@ul@ps\space\tg@ul@ps\space scale}%
+	\immediate\write\tg@epsfile{newpath 0 0 moveto \rmpt\tg@pswidth\space 0 rlineto 0 \rmpt\tg@psheight\space rlineto -1 \rmpt\tg@pswidth\space mul 0 rlineto closepath clip}
 	\immediate\write\tg@epsfile{gsave}%
+	\immediate\write\tg@epsfile{\tg@ul@ps\space\tg@ul@ps\space scale}%
 	\immediate\write\tg@epsfile{/framewidth \rmpt\tg@width\space def}%
 	\immediate\write\tg@epsfile{/frameheight \rmpt\tg@height\space def}%
 	\tg@epspreamble
