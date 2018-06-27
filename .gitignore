@@ -9,3 +9,9 @@ doc/texgraph-doc.log
 cmd.lnk
 Butterworth.txt
 Bessel.txt
+doc/texgraph-doc.toc
+doc/texgraph-doc.aux
+doc/texgraph-doc-tg2.eps
+doc/texgraph-doc-tg1.eps
+doc/texgraph-doc-tg.tmp
+doc/texgraph-doc-tg.py
