@@ -107,6 +107,7 @@
 \newdimen\tg@legtextwidth
 \newcount\tg@cnt@legend
 \newcount\tg@cnt@str
+\newcount\tg@cnt@step
 %
 % 制御綴中末尾の空白を削除
 \def\tg@rmsp@ce#1 {#1}
@@ -240,6 +241,7 @@
 % データファイル#1を1行づつ読み出し, 第#2,#3列を抽出, epsに座標書き出し
 % #4, #5: 第#2, #3列の値に対する変換式
 \def\tg@extracttwocolumn#1[#2][#3]#4#5{%
+	\tg@cnt@step=0
 	\immediate\openin\tg@fin=#1%
 	\loop
 	\catcode`\#=12% データファイルの行を扱う時のみ#をその他の文字として扱う
@@ -249,27 +251,31 @@
 		\ifx\tg@onerow\tg@emptyrow\else% 空行判定
 			\expandafter\tg@extracttopchar\tg@onerow\relax
 			\ifnum\tg@cnttopchar=35 \else% 空行, コメント行でない場合実行する処理
-				\tg@extractstr\tg@onerow[#2]% 第#2列抽出
-				\if=\tg@ret@split
-					\edef\tg@tmpx{(\tg@ret@split)}
-				\else
-					\if#4x
-						\edef\tg@tmpx{\tg@ret@split}
+				\ifnum\tg@cnt@step=0
+					\tg@extractstr\tg@onerow[#2]% 第#2列抽出
+					\if=\tg@ret@split
+						\edef\tg@tmpx{(\tg@ret@split)}
 					\else
-						\tg@pyeval\tg@ret@split\tg@tmpx{x}#4
+						\if#4x
+							\edef\tg@tmpx{\tg@ret@split}
+						\else
+							\tg@pyeval\tg@ret@split\tg@tmpx{x}#4
+						\fi
 					\fi
-				\fi
-				\tg@extractstr\tg@onerow[#3]% 第#3列抽出
-				\if=\tg@ret@split
-					\edef\tg@tmpy{(\tg@ret@split)}
-				\else
-					\if#5y
-						\edef\tg@tmpy{\tg@ret@split}
+					\tg@extractstr\tg@onerow[#3]% 第#3列抽出
+					\if=\tg@ret@split
+						\edef\tg@tmpy{(\tg@ret@split)}
 					\else
-						\tg@pyeval\tg@ret@split\tg@tmpy{y}#5
+						\if#5y
+							\edef\tg@tmpy{\tg@ret@split}
+						\else
+							\tg@pyeval\tg@ret@split\tg@tmpy{y}#5
+						\fi
 					\fi
+					\immediate\write\tg@epsfile{\tg@tmpx\space\tg@tmpy\space plot}%
+					\tg@cnt@step\expandafter=\tg@plotstep
 				\fi
-				\immediate\write\tg@epsfile{\tg@tmpx\space\tg@tmpy\space plot}%
+				\advance \tg@cnt@step -1
 			\fi
 		\fi
 	\repeat
@@ -292,6 +298,7 @@
 \define@key{tg@tgplot}{xconvert}{\edef\tg@xconvert{#1}}% 横軸値変換
 \define@key{tg@tgplot}{yconvert}{\edef\tg@yconvert{#1}}% 縦軸値変換
 \define@key{tg@tgplot}{color}{\edef\tg@plotcolor{#1}}% プロット色
+\define@key{tg@tgplot}{step}{\edef\tg@plotstep{#1}}% 読み飛ばし行数
 %
 \def\plot{%
 \@ifnextchar<{\@plot}{\@plot<>}%
@@ -304,6 +311,7 @@
 	\def\tg@xconvert{x}
 	\def\tg@yconvert{y}
 	\def\tg@plotcolor{0 0 0}
+	\def\tg@plotstep{1}
 	\setkeys{tg@tgplot}{#1}
 	\immediate\write\tg@epsfile{/first 1 def}%
 	\immediate\write\tg@epsfile{/xaxis (#3) xyur2num def}%
