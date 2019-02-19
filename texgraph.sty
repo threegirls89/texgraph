@@ -445,50 +445,54 @@
 %x軸
 	% epsにx目盛書き出し
 	\immediate\write\tg@epsfile{0 \tg@xincrement\space \tg@xdivision\space cst\tg@frametype\space measure}%
-	\ifx\tg@xtype\tg@strlinear
-		% x軸数字
-		\tg@pytwocalc{math.ceil(float(\tg@xmin) / \tg@xincrement) * \tg@xincrement}{\tg@xmeasuremin}{math.floor(float(\tg@xmax) / \tg@xincrement) * \tg@xincrement}{\tg@xmeasuremax}%
-		\edef\tg@tmpcnt{\tg@xmeasuremin}
-		\loop
-			\tg@pycalc{float(\rmpt\tg@width) * ((\tg@tmpcnt) - (\tg@xmin)) / ((\tg@xmax) - (\tg@xmin))}{\tg@pictx}%
-			\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@xformat}{\tg@xpresition}%
-			\put(\tg@pictx,-5){\makebox(0,0)[t]{\tg@measurefont\tg@tmpformat}}%
-			\tg@pytwocalc{\tg@tmpcnt + \tg@xincrement}{\tg@tmpcnt}{'t' if (\tg@tmpcnt + \tg@xincrement <= \tg@xmeasuremax) else 'f'}{\tg@tmpbool}%
-			\if t\tg@tmpbool \repeat
-	\else
-		\tg@pytwocalc{10 ** math.ceil(math.log10(\tg@xmin))}{\tg@xmeasuremin}{10 ** math.floor(math.log10(\tg@xmax))}{\tg@xmeasuremax}%
-		\immediate\write\tg@epsfile{\@percent\@percent\@percent\@percent\@percent\@percent\@percent\@percent\@percent\@percent \tg@xmeasuremin \tg@xmeasuremax}%
-		\edef\tg@tmpcnt{\tg@xmeasuremin}
-		\loop
-			\tg@pycalc{float(\rmpt\tg@width) * math.log10(float(\tg@tmpcnt) / \tg@xmin) / math.log10(\tg@xmax / \tg@xmin)}{\tg@pictx}%
-			\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@xformat}{\tg@xpresition}%
-			\put(\tg@pictx,-5){\makebox(0,0)[t]{\tg@measurefont\tg@tmpformat}}%
-			\tg@pytwocalc{\tg@tmpcnt * 10}{\tg@tmpcnt}{'t' if (\tg@tmpcnt * 10 <= \tg@xmeasuremax) else 'f'}{\tg@tmpbool}%
-			\if t\tg@tmpbool \repeat
+	\if n\tg@xformat\else
+		\ifx\tg@xtype\tg@strlinear
+			% x軸数字
+			\tg@pytwocalc{math.ceil(float(\tg@xmin) / \tg@xincrement) * \tg@xincrement}{\tg@xmeasuremin}{math.floor(float(\tg@xmax) / \tg@xincrement) * \tg@xincrement}{\tg@xmeasuremax}%
+			\edef\tg@tmpcnt{\tg@xmeasuremin}
+			\loop
+				\tg@pycalc{float(\rmpt\tg@width) * ((\tg@tmpcnt) - (\tg@xmin)) / ((\tg@xmax) - (\tg@xmin))}{\tg@pictx}%
+				\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@xformat}{\tg@xpresition}%
+				\put(\tg@pictx,-5){\makebox(0,0)[t]{\tg@measurefont\tg@tmpformat}}%
+				\tg@pytwocalc{\tg@tmpcnt + \tg@xincrement}{\tg@tmpcnt}{'t' if (\tg@tmpcnt + \tg@xincrement <= \tg@xmeasuremax) else 'f'}{\tg@tmpbool}%
+				\if t\tg@tmpbool \repeat
+		\else
+			\tg@pytwocalc{10 ** math.ceil(math.log10(\tg@xmin))}{\tg@xmeasuremin}{10 ** math.floor(math.log10(\tg@xmax))}{\tg@xmeasuremax}%
+			\immediate\write\tg@epsfile{\@percent\@percent\@percent\@percent\@percent\@percent\@percent\@percent\@percent\@percent \tg@xmeasuremin \tg@xmeasuremax}%
+			\edef\tg@tmpcnt{\tg@xmeasuremin}
+			\loop
+				\tg@pycalc{float(\rmpt\tg@width) * math.log10(float(\tg@tmpcnt) / \tg@xmin) / math.log10(\tg@xmax / \tg@xmin)}{\tg@pictx}%
+				\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@xformat}{\tg@xpresition}%
+				\put(\tg@pictx,-5){\makebox(0,0)[t]{\tg@measurefont\tg@tmpformat}}%
+				\tg@pytwocalc{\tg@tmpcnt * 10}{\tg@tmpcnt}{'t' if (\tg@tmpcnt * 10 <= \tg@xmeasuremax) else 'f'}{\tg@tmpbool}%
+				\if t\tg@tmpbool \repeat
+		\fi
 	\fi
 % y軸
 	\immediate\write\tg@epsfile{1 \tg@yincrement\space \tg@ydivision\space cst\tg@frametype\space measure}%
-	\ifx\tg@ytype\tg@strlinear
-		% y軸数字
-		\tg@pytwocalc{math.ceil(float(\tg@ymin) / \tg@yincrement) * \tg@yincrement}{\tg@ymeasuremin}{math.floor(float(\tg@ymax) / \tg@yincrement) * \tg@yincrement}{\tg@ymeasuremax}%
-		\edef\tg@tmpcnt{\tg@ymeasuremin}
-		\loop
-			\tg@pycalc{float(\rmpt\tg@height) * ((\tg@tmpcnt) - (\tg@ymin)) / ((\tg@ymax) - (\tg@ymin))}{\tg@picty}%
-			\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@yformat}{\tg@ypresition}%
-			\put(-5,\tg@picty){\makebox(0,0)[r]{\tg@measurefont\tg@tmpformat}}%
-			\tg@pytwocalc{\tg@tmpcnt + \tg@yincrement}{\tg@tmpcnt}{'t' if (\tg@tmpcnt + \tg@yincrement <= \tg@ymeasuremax) else 'f'}{\tg@tmpbool}%
-			\if t\tg@tmpbool \repeat
-	\else
-		\tg@pytwocalc{10 ** math.ceil(math.log10(\tg@ymin))}{\tg@ymeasuremin}{10 ** math.floor(math.log10(\tg@ymax))}{\tg@ymeasuremax}%
-		\edef\tg@tmpcnt{\tg@ymeasuremin}
-		\loop
-			\tg@pycalc{float(\rmpt\tg@height) * math.log10(float(\tg@tmpcnt) / \tg@ymin) / math.log10(\tg@ymax / \tg@ymin)}{\tg@picty}%
-			\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@yformat}{\tg@ypresition}%
-			\put(-5,\tg@picty){\makebox(0,0)[r]{\tg@measurefont\tg@tmpformat}}%
-			\tg@pytwocalc{\tg@tmpcnt * 10}{\tg@tmpcnt}{'t' if (\tg@tmpcnt * 10 <= \tg@ymeasuremax) else 'f'}{\tg@tmpbool}%
-			\if t\tg@tmpbool \repeat
+	\if n\tg@yformat\else
+		\ifx\tg@ytype\tg@strlinear
+			% y軸数字
+			\tg@pytwocalc{math.ceil(float(\tg@ymin) / \tg@yincrement) * \tg@yincrement}{\tg@ymeasuremin}{math.floor(float(\tg@ymax) / \tg@yincrement) * \tg@yincrement}{\tg@ymeasuremax}%
+			\edef\tg@tmpcnt{\tg@ymeasuremin}
+			\loop
+				\tg@pycalc{float(\rmpt\tg@height) * ((\tg@tmpcnt) - (\tg@ymin)) / ((\tg@ymax) - (\tg@ymin))}{\tg@picty}%
+				\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@yformat}{\tg@ypresition}%
+				\put(-5,\tg@picty){\makebox(0,0)[r]{\tg@measurefont\tg@tmpformat}}%
+				\tg@pytwocalc{\tg@tmpcnt + \tg@yincrement}{\tg@tmpcnt}{'t' if (\tg@tmpcnt + \tg@yincrement <= \tg@ymeasuremax) else 'f'}{\tg@tmpbool}%
+				\if t\tg@tmpbool \repeat
+		\else
+			\tg@pytwocalc{10 ** math.ceil(math.log10(\tg@ymin))}{\tg@ymeasuremin}{10 ** math.floor(math.log10(\tg@ymax))}{\tg@ymeasuremax}%
+			\edef\tg@tmpcnt{\tg@ymeasuremin}
+			\loop
+				\tg@pycalc{float(\rmpt\tg@height) * math.log10(float(\tg@tmpcnt) / \tg@ymin) / math.log10(\tg@ymax / \tg@ymin)}{\tg@picty}%
+				\tg@pyformat{\tg@tmpcnt}{\tg@tmpformat}{\tg@yformat}{\tg@ypresition}%
+				\put(-5,\tg@picty){\makebox(0,0)[r]{\tg@measurefont\tg@tmpformat}}%
+				\tg@pytwocalc{\tg@tmpcnt * 10}{\tg@tmpcnt}{'t' if (\tg@tmpcnt * 10 <= \tg@ymeasuremax) else 'f'}{\tg@tmpbool}%
+				\if t\tg@tmpbool \repeat
+		\fi
 	\fi
-%u軸
+	%u軸
 	\iftg@uaxis
 		\@tempdima=\tg@height
 		\advance \@tempdima 5\p@
