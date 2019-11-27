@@ -338,7 +338,9 @@
 	\fi
 	\immediate\write\tg@epsfile{mark}%
 	\tg@extracttwocolumn#2[#4][#6]\tg@xconvert\tg@yconvert
+	\if\tg@linetype0\else
 	\immediate\write\tg@epsfile{stroke}%
+	\fi
 	\immediate\write\tg@epsfile{grestore}%
 	\immediate\write\tg@epsfile{\tg@pointtype \space \tg@pointsize\space \tg@linewidth\space\tg@plotcolor\space points}%
 }
@@ -556,8 +558,9 @@
 			\fi
 		\fi
 	\fi
-	\immediate\write\tg@epsfile{grestore gsave}%
-	\immediate\write\tg@epsfile{\tg@framecolor\space 255 div 3 1 roll 255 div 3 1 roll 255 div 3 1 roll setrgbcolor}
+	\immediate\write\tg@epsfile{grestore}%
+	\immediate\write\tg@epsfile{gsave}%
+	\immediate\write\tg@epsfile{\tg@framecolor\space 255 div 3 1 roll 255 div 3 1 roll 255 div 3 1 roll setrgbcolor}%
 	\immediate\write\tg@epsfile{\tg@framethick\space frame}%
 	\immediate\write\tg@epsfile{grestore}%
 }
